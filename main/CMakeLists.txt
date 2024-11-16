@@ -9,4 +9,6 @@ idf_component_register(
     INCLUDE_DIRS "libs/sampler"
 )
 
+set(EXTRA_COMPONENT_DIRS "${PROJECT_DIR}/components")
+
 add_compile_options(-std=c++11)
