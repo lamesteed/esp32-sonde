@@ -22,6 +22,7 @@ float tempC = 0;
 float pressure = 0;
 float depth = 0;
 float tds_value = 0;
+float conductivity = 0;
 DFRobot_ESP_EC ec;
 
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
@@ -36,35 +37,29 @@ float tempMeasurement (DallasTemperature t) {
 }
 
 float voltageMeasurement (int inputPin, int refVoltage, int adcRes) {
-    int adcVal = analogRead(inputPin);
-    return ((float)adcVal * refVoltage) / adcRes;
-}
-
-float ConductivMeasurement (float analogValue, float temperature) {
+    // Calculate the volts per division using the VREF taking account of the chosen attenuation value.
     //float adcCompensation = 1 + (1 / 3.9); // 1/3.9 (11dB) attenuation.
-    float averageVoltage = (analogValue * REF_VOLTAGE) / ADC_RESOLUTION;
-    float conductivity = ec.readEC(averageVoltage, temperature);
-    return conductivity;
+    float adcCompensation = 1; // 0dB attenuation
+    int adcVal = analogRead(inputPin);
+    return ((float)adcVal * refVoltage) * adcCompensation / adcRes;
 }
 
-float TDSMeasurement (float analogValue, float temperature) {
+float ConductivMeasurement (float inputPin, int refVoltage, int adcRes, float temperature) {
+    float voltage = voltageMeasurement(inputPin, refVoltage, adcRes);
+    return ec.readEC(voltage, temperature);
+}
+
+float TDSMeasurement (float inputPin, int refVoltage, int adcRes, float temperature) {
         
-    float adcCompensation = 1 + (1 / 3.9); // 1/3.9 (11dB) attenuation.
-    float averageVoltage = (analogValue *REF_VOLTAGE/ ADC_RESOLUTION) * adcCompensation; // Calculate the volts per division using the VREF taking account of the chosen attenuation value.
-    float compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0); //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
-    float compensationVoltage = averageVoltage / compensationCoefficient; //temperature compensation
-    float tdsValue = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 * compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5; //convert voltage value to tds value
-    return tdsValue;
+    float voltage = voltageMeasurement(inputPin, refVoltage, adcRes);
+    //assuming 0v = 0ppm, 2.3v = 1000ppm.
+    return 434.8 * voltage;
 }
 
-float pressureMeasurement (float analogValue) {
-        float adcCompensation = 1 + (1 / 3.9); // 1/3.9 (11dB) attenuation.
-        float pressure_voltage = adcCompensation * (analogValue * REF_VOLTAGE) / ADC_RESOLUTION;
+float pressureMeasurement (float inputPin, int refVoltage, int adcRes) {
+        float voltage = voltageMeasurement(inputPin, refVoltage, adcRes);
         // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
-        // adjust BASELINE_VOLTAGE based on your zero-pressure reading
-        //pressure = 25 * pressure_voltage -12.5;
-        pressure = (pressure_voltage - BASELINE_VOLTAGE) * (MAX_SENSOR_PRESSURE/(4.5 - BASELINE_VOLTAGE));
-        return pressure;
+        return 25 * voltage -12.5;
 }
 
 CDummySampler::CDummySampler( const int samples )
@@ -107,11 +102,11 @@ std::string CDummySampler::getSample()
         ESP_LOGI( TAG, "getSample() retrived sample #%d ", counter );
         //tempC = tempMeasurement(tempSensor);
         tempC = 25;
-        pressure = pressureMeasurement (analogRead(PRESSURE_SENSOR_INPUT_PIN));
+        pressure = pressureMeasurement (PRESSURE_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION);
         float pressure_voltage = voltageMeasurement(PRESSURE_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION);
-        tds_value = TDSMeasurement(analogRead(TDS_SENSOR_INPUT_PIN), tempC);
+        tds_value = TDSMeasurement(TDS_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION, tempC);
         float tds_voltage = voltageMeasurement(TDS_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION);
-        float conductivity = ConductivMeasurement(TDS_SENSOR_INPUT_PIN, tempC);
+        conductivity = ConductivMeasurement(TDS_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION, tempC);
    
        
         ESP_LOGI(TAG,"Temperature: %f°C", tempC);
@@ -147,7 +142,7 @@ std::string CDummySampler::getSample()
         "Temperature: " + tempString + 
         "°C\nPressure: " + pressureString + "psi, " + pressureVoltageString + 
         "v\nTDS: " + tdsValueString + "ppm, " + tdsVoltageString + 
-        "v\nConductivity: " + conductivString +
+        "v\nConductivity: " + conductivString + "mS/cm\n" +
         std::to_string( counter++ ) + "\n\n";
 
         return sampleData;
