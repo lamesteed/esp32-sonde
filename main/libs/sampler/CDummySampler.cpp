@@ -1,7 +1,6 @@
 #include "CDummySampler.h"
 #include "esp_log.h"
 #include "delay.h"
-
 #include <math.h>
 #include <Arduino.h>
 #include <OneWire.h>
@@ -22,10 +21,8 @@
 
 float tempC = 0;
 float ADC_COMPENSATION = 1; // 0dB attenuation. for 11dB: adcCompensation = 1 + (1 / 3.9)
-
 DFRobot_ESP_EC ec;
 //Adafruit_ADS1115 ads;
-
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
@@ -37,51 +34,45 @@ std::string floatToTwoDecimalString(float value) {
   return std::to_string(whole) + "." + (decimal < 10 ? "0" : "") + std::to_string(decimal);
 }
 
-float tempMeasurement (DallasTemperature t) {
+float getTemperatureInCelsius (DallasTemperature t) {
     t.requestTemperatures();  // Request temperature readings
     return t.getTempCByIndex(0);        // read temperature in °C
 }
 
-float voltageMeasurement (int inputPin, int refVoltage, int adcRes) {
+float getInputVoltage (int inputPin) {
     int adcVal = analogRead(inputPin);
     // Calculate the volts per division using the VREF taking account of the chosen attenuation value.
-    return (float)adcVal * refVoltage * ADC_COMPENSATION / adcRes;
+    return (float)adcVal * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
-float ConductivMeasurement (float inputPin, float temperature) {
-    float voltage = voltageMeasurement(inputPin, REF_VOLTAGE, ADC_RESOLUTION);
+float getConductivity (float inputPin, float temperature) {
+    float voltage = getInputVoltage(inputPin);
     //float voltage = voltageMeasurement(ads.readADC_SingleEnded(2)/10,refVoltage,adcRes);
     float conductivity = ec.readEC(voltage, temperature) * 1000; // multiply by 1000 to get μS/cm
     return (conductivity > 0) ? conductivity : 0;
 }
 
-float TDSMeasurement (float inputPin, float temperature) {
-    float voltage = voltageMeasurement(inputPin, REF_VOLTAGE, ADC_RESOLUTION);
+float getTDS (float inputPin, float temperature) {
+    float voltage = getInputVoltage(inputPin);
     float tds = 434.8 * voltage; // assuming 0v = 0ppm, 2.3v = 1000ppm.
     return (tds > 0) ? tds : 0;
 }
 
-float pressureMeasurement (float inputPin) {
-        float voltage = voltageMeasurement(inputPin, REF_VOLTAGE, ADC_RESOLUTION);
+float getPressure (float inputPin) {
+        float voltage = getInputVoltage(TDS_SENSOR_INPUT_PIN);
         float pressure = 25 * voltage -12.5; // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
         return (pressure > 0) ?  pressure :  0;
 }
 
 CDummySampler::CDummySampler( const int samples )
-    : mSampleCounter( samples )
-{
+    : mSampleCounter( samples ) {
     ESP_LOGI( TAG, "Instance created (samples = %d)", samples );
 }
 
-CDummySampler::~CDummySampler()
-{
-    ESP_LOGI( TAG, "Instance destroyed" );
-}
+CDummySampler::~CDummySampler(){ESP_LOGI( TAG, "Instance destroyed" );}
 
-bool CDummySampler::init()
-{
+bool CDummySampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
-    
     Serial.begin(9600); // initialize serial
     tempSensor.begin(); // initialize temperature sensor
     ec.begin();         // initialize voltage coverting library
@@ -93,32 +84,31 @@ bool CDummySampler::init()
     return true;
 }
 
-std::string CDummySampler::getSample()
-{
+std::string CDummySampler::getSample() {
     delayMsec( 1000 );
     static int counter = 1;
     std::string sampleData = "";
 
-    if( counter > mSampleCounter )
-    {
+    if( counter > mSampleCounter ) {
         ESP_LOGI( TAG, "getSample() - no more samples" );
         return "";
-    }
-    else
-    {
+    } else {
         ESP_LOGI( TAG, "getSample() retrived sample #%d ", counter );
-        tempC = tempMeasurement(tempSensor);
-
+        tempC = getTemperatureInCelsius(tempSensor);
         sampleData = 
         "Temperature: " + floatToTwoDecimalString(tempC) + 
-        "°C\nPressure: " + floatToTwoDecimalString(pressureMeasurement (PRESSURE_SENSOR_INPUT_PIN)) + 
-        "psi, " + floatToTwoDecimalString(voltageMeasurement(PRESSURE_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION)) + 
-        "v\nTDS: " + floatToTwoDecimalString(TDSMeasurement(TDS_SENSOR_INPUT_PIN, tempC)) + 
-        "ppm, " + floatToTwoDecimalString(voltageMeasurement(TDS_SENSOR_INPUT_PIN, REF_VOLTAGE, ADC_RESOLUTION)) + 
-        "v\nConductivity: " + floatToTwoDecimalString(ConductivMeasurement(TDS_SENSOR_INPUT_PIN, tempC)) + 
+        "°C\nPressure: " + floatToTwoDecimalString(
+                                getPressure (PRESSURE_SENSOR_INPUT_PIN)) + 
+        "psi, " + floatToTwoDecimalString(
+                                getInputVoltage(PRESSURE_SENSOR_INPUT_PIN)) + 
+        "v\nTDS: " + floatToTwoDecimalString(
+                                getTDS(TDS_SENSOR_INPUT_PIN, tempC)) + 
+        "ppm, " + floatToTwoDecimalString(
+                                getInputVoltage(TDS_SENSOR_INPUT_PIN)) + 
+        "v\nConductivity: " + floatToTwoDecimalString(
+                                getConductivity(TDS_SENSOR_INPUT_PIN, tempC)) + 
         "μS/cm\n" +
         std::to_string( counter++ ) + "\n\n";
-
         return sampleData;
     }
 }
