@@ -6,14 +6,14 @@
 #include <DallasTemperature.h>
 
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
-#define TDS_SENSOR_PIN            34        // pin GPIO34 (ADC1) to TDS sensor
+#define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
 float tempC, pressure, tds, conductivity = 0;
-float ADC_COMPENSATION = 1;                 // 0dB attenuation. for 11dB: adcCompensation = 1 + (1 / 3.9)
+float ADC_COMPENSATION = 1;                 // 0dB attenuation
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
@@ -21,7 +21,7 @@ const char * ProbeSampler::TAG = "ProbeSampler";
 
 std::string twoDecimalString(float value) {
   int whole = (int)value;                       // Extract the whole part
-  int decimal = (int)((value - whole) * 100);   // Extract the decimal part (scaled to 2 places)
+  int decimal = (int)((value - whole) * 100);   // Extract the decimal part
   return std::to_string(whole) + "." + (decimal < 10 ? "0" : "") + std::to_string(decimal);
 }
 
@@ -48,7 +48,7 @@ float getConductivity (float inputPin, float temperature) {
         0.5  - sea water
         0.7  - drinking water
         0.8  - hydroponics */
-    float conductivity = getTDS(inputPin, temperature)/0.7; // assuming 0.7 is the TDS conversion factor
+    float conductivity = getTDS(inputPin, temperature)/0.7; // assuming 0.7 conversion factor
     return (conductivity > 0) ? conductivity : 0;
 }
 
@@ -89,8 +89,8 @@ std::string ProbeSampler::getSample() {
         // reading sensors
         tempC = getTemperatureInCelsius(tempSensor);
         pressure = getPressure (PRESSURE_SENSOR_INPUT_PIN);
-        tds = getTDS(TDS_SENSOR_PIN, tempC);
-        conductivity = getConductivity(TDS_SENSOR_PIN, tempC);
+        tds = getTDS(TDS_SENSOR_INPUT_PIN, tempC);
+        conductivity = getConductivity(TDS_SENSOR_INPUT_PIN, tempC);
 
         // writing sample data into string to be sent out via bluetooth
         sampleData = "Temperature: " + 
@@ -98,7 +98,7 @@ std::string ProbeSampler::getSample() {
         std::to_string(pressure) +  "psi, " + 
         twoDecimalString(getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN)) + "v\nTDS: " + 
         std::to_string(tds) + "ppm, " + 
-        std::to_string(getAnalogInputVoltage(TDS_SENSOR_PIN)) + "v\nConductivity: " + 
+        std::to_string(getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN)) + "v\nConductivity: " + 
         std::to_string(conductivity) + "μS/cm\n" +
         std::to_string( counter++ ) + "\n\n";
         Serial.println("attributes: ");

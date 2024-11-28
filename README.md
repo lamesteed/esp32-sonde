@@ -84,3 +84,46 @@ sequenceDiagram
     A ->> M: ok
     M ->> M: reboot
 ```
+
+```mermaid
+classDiagram
+    class ProbeSampler {
+        -int mSampleCounter
+        +ProbeSampler(int samples)
+        +~ProbeSampler()
+        +bool init()
+        +std::string getSample()
+    }
+
+    class OneWire {
+        +OneWire(int pin)
+    }
+
+    class DallasTemperature {
+        +DallasTemperature(OneWire* oneWire)
+        +void begin()
+        +void requestTemperatures()
+        +float getTempCByIndex(int index)
+    }
+
+    ProbeSampler --> OneWire : uses
+    ProbeSampler --> DallasTemperature : uses
+
+    class GlobalFunctions {
+        +std::string twoDecimalString(float value)
+        +float getTemperatureInCelsius(DallasTemperature t)
+        +float getAnalogInputVoltage(int inputPin)
+        +float getTDS(float inputPin, float temperature)
+        +float getConductivity(float inputPin, float temperature)
+        +float getPressure(float inputPin)
+    }
+
+    ProbeSampler : +const char* TAG = "ProbeSampler"
+    ProbeSampler : +float tempC
+    ProbeSampler : +float pressure
+    ProbeSampler : +float tds
+    ProbeSampler : +float conductivity
+    ProbeSampler : +float ADC_COMPENSATION = 1
+    ProbeSampler : +OneWire oneWire(TEMP_SENSOR_INPUT_PIN)
+    ProbeSampler : +DallasTemperature tempSensor(&oneWire)
+    ```
