@@ -1,18 +1,18 @@
 
-#ifndef CDUMMYSAMPLER_H
-#define CDUMMYSAMPLER_H
+#ifndef PROBESAMPLER_H
+#define PROBESAMPLER_H
 
 #include "ISampler.h"
 
-class CDummySampler : public ISampler
+class ProbeSampler : public ISampler
 {
 public:
     /// @brief Constructor
     /// @param samples Number of samples to be generated
-    CDummySampler ( const int samples );
+    ProbeSampler ( const int samples );
 
     /// @brief Virtual destructor
-    virtual ~CDummySampler();
+    virtual ~ProbeSampler();
 
 private:
     // ISampler interface
@@ -33,4 +33,4 @@ private:
 
 };
 
-#endif // CDUMMYSAMPLER_H
+#endif // PROBESAMPLER_H
