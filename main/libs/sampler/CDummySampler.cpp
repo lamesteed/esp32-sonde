@@ -10,31 +10,32 @@
 #include <string>
 #include <Wire.h>
 
-#define PRESSURE_SENSOR_INPUT_PIN 36 // pin GPIO36 (ADC0) to pressure sensor
-#define TEMP_SENSOR_INPUT_PIN     17 // pin to DS18B20 sensor's DATA pin
-#define ADS1115_INPUT_PIN         0  // A0 pin of ADS1115
-#define REF_VOLTAGE               5
-#define BASELINE_VOLTAGE          0.5
-#define ADC_RESOLUTION            4096.0
+#define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
+#define TDS_SENSOR_PIN            34        // pin GPIO34 (ADC1) to TDS sensor
+#define TEMP_SENSOR_INPUT_PIN     18        // pin to DS18B20 sensor's DATA pin
+#define ADS1115_INPUT_PIN         0         // A0 pin of ADS1115
+#define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
+#define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
+#define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
-float tempC = 0;
+float tempC, pressure, tds, conductivity = 0;
 float ADC_COMPENSATION = 1; // 0dB attenuation. for 11dB: adcCompensation = 1 + (1 / 3.9)
-DFRobot_ESP_EC ec;
-Adafruit_ADS1115 ads;
+//DFRobot_ESP_EC ec;
+//Adafruit_ADS1115 ads;
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
 const char * CDummySampler::TAG = "CDummySampler";
 
 std::string floatToTwoDecimalString(float value) {
-  int whole = (int)value; // Extract the whole part
-  int decimal = (int)((value - whole) * 100); // Extract the decimal part (scaled to 2 places)
+  int whole = (int)value;                       // Extract the whole part
+  int decimal = (int)((value - whole) * 100);   // Extract the decimal part (scaled to 2 places)
   return std::to_string(whole) + "." + (decimal < 10 ? "0" : "") + std::to_string(decimal);
 }
 
 float getTemperatureInCelsius (DallasTemperature t) {
-    t.requestTemperatures();  // Request temperature readings
-    return t.getTempCByIndex(0);        // read temperature in °C
+    t.requestTemperatures();                    // Request temperature readings
+    return t.getTempCByIndex(0);                // read temperature in °C
 }
 
 float getAnalogInputVoltage (int inputPin) {
@@ -42,20 +43,21 @@ float getAnalogInputVoltage (int inputPin) {
     return (float)analogRead(inputPin) * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
-float getADS1115Voltage (int inputPin) {
+// float getADS1115Voltage (int inputPin) {
     
-  /*GAIN_TWOTHIRDS (±6.144V): 0.1875mV per bit
-    GAIN_ONE (±4.096V): 0.125mV per bit
-    GAIN_TWO (±2.048V): 0.0625mV per bit
-    GAIN_FOUR (±1.024V): 0.03125mV per bit
-    GAIN_EIGHT (±0.512V): 0.015625mV per bit
-    GAIN_SIXTEEN (±0.256V): 0.0078125mV per bit*/
+//   /*GAIN_TWOTHIRDS (±6.144V): 0.1875mV per bit
+//     GAIN_ONE (±4.096V): 0.125mV per bit
+//     GAIN_TWO (±2.048V): 0.0625mV per bit
+//     GAIN_FOUR (±1.024V): 0.03125mV per bit
+//     GAIN_EIGHT (±0.512V): 0.015625mV per bit
+//     GAIN_SIXTEEN (±0.256V): 0.0078125mV per bit*/
     
-    return (float)ads.readADC_SingleEnded(inputPin) * 0.125 / 1000; // convert adc value to voltage
-}
+//     return (float)ads.readADC_SingleEnded(inputPin) * 0.125 / 1000; // convert adc value to voltage
+// }
 
 float getTDS (float inputPin, float temperature) {
-    float tds = 434.8 * getADS1115Voltage(inputPin); // assuming 0v = 0ppm, 2.3v = 1000ppm.
+    float v = getAnalogInputVoltage(inputPin);
+    float tds = 434.8 * v; // assuming 0v = 0ppm, 2.3v = 1000ppm.
      return (tds > 0) ? tds : 0;
 }
 
@@ -67,7 +69,7 @@ float getConductivity (float inputPin, float temperature) {
         0.8  - hydroponics */
     //float conductivity = ec.readEC(getADS1115Voltage(inputPin), temperature) * 1000; // multiply by 1000 to get μS/cm
     //float conductivity = ec.readEC(ads.readADC_SingleEnded(inputPin)/10, temperature) * 1000;
-    float conductivity = getTDS(inputPin, temperature)/0.7; // assuming 0.7 is the conversion factor
+    float conductivity = getTDS(inputPin, temperature)/0.7; // assuming 0.7 is the TDS conversion factor
     return (conductivity > 0) ? conductivity : 0;
 }
 
@@ -85,11 +87,11 @@ CDummySampler::~CDummySampler(){ESP_LOGI( TAG, "Instance destroyed" );}
 
 bool CDummySampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
-    Serial.begin(9600);         // initialize serial
-    tempSensor.begin();         // initialize temperature sensor
-    ec.begin();                 // initialize voltage coverting library
-    ads.setGain(GAIN_ONE);      // use GAIN_ONE setting to read up to 4V
-	ads.begin();                // initialize ADS1115 for conductivity measurement
+    Serial.begin(9600);                             // initialize serial
+    tempSensor.begin();                             // initialize temperature sensor
+    //ec.begin();                                     // initialize voltage coverting library
+    //ads.setGain(GAIN_ONE);                          // use GAIN_ONE setting to read up to 4V
+	//ads.begin();                                    // initialize ADS1115 for conductivity measurement
 
     delayMsec( 1000 );
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
@@ -105,16 +107,22 @@ std::string CDummySampler::getSample() {
         ESP_LOGI( TAG, "getSample() - no more samples" );
         return "";
     } else {
-        ESP_LOGI( TAG, "getSample() retrived sample #%d ", counter );
+        ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
+        Serial.println("Reading sensors...");
         tempC = getTemperatureInCelsius(tempSensor);
+        pressure = getPressure (PRESSURE_SENSOR_INPUT_PIN);
+        tds = getTDS(TDS_SENSOR_PIN, tempC);
+        conductivity = getConductivity(TDS_SENSOR_PIN, tempC);
+
         sampleData = "Temperature: " + 
         floatToTwoDecimalString(tempC) + "°C\nPressure: " + 
-        std::to_string(getPressure (PRESSURE_SENSOR_INPUT_PIN)) +  "psi, " + 
+        std::to_string(pressure) +  "psi, " + 
         floatToTwoDecimalString(getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN)) + "v\nTDS: " + 
-        std::to_string(getTDS(ADS1115_INPUT_PIN, tempC)) + "ppm, " + 
-        floatToTwoDecimalString(getADS1115Voltage(ADS1115_INPUT_PIN)) + "v\nConductivity: " + 
-        std::to_string(getConductivity(ADS1115_INPUT_PIN, tempC)) + "μS/cm\n" +
+        std::to_string(tds) + "ppm, " + 
+        std::to_string(getAnalogInputVoltage(TDS_SENSOR_PIN)) + "v\nConductivity: " + 
+        std::to_string(conductivity) + "μS/cm\n" +
         std::to_string( counter++ ) + "\n\n";
+        Serial.println("attributes: ");
         return sampleData;
     }
 }
