@@ -42,6 +42,12 @@
    Example:
    % idf.py -p /dev/cu.wchusbserial2110 flash
 
+   For Linux, UART port will be under /dev/ttyUSB0. In some cases, you must
+   enable permissions to read and write from that port with the following
+   command before flash (Fedora):
+   % sudo chmod a+rw /dev/ttyUSB0
+   % idf.py -p /dev/ttyUSB0 flash
+
 5. To start monitoring serial port for application output
    % idf.py -p <PORT> monitor
    Example:
