@@ -42,18 +42,16 @@
    Example:
    % idf.py -p /dev/cu.wchusbserial2110 flash
 
-   For Linux, UART port will be under /dev/ttyUSB0. In some cases, you must
-   enable permissions to read and write from that port with the following
-   command before flash (Fedora):
+   For Linux, UART port will be under /dev/ttyUSB0. In some cases, you must enable permissions to read and write from that port with the following command before flash (Fedora):
    % sudo chmod a+rw /dev/ttyUSB0
    % idf.py -p /dev/ttyUSB0 flash
 
-5. To start monitoring serial port for application output
+6. To start monitoring serial port for application output
    % idf.py -p <PORT> monitor
    Example:
    % idf.py -p /dev/cu.wchusbserial2110 flash
 
-6. Build is based on CMake, to expand project with new includes/sources simply modify main/CMakeLists.txt
+7. Build is based on CMake, to expand project with new includes/sources simply modify main/CMakeLists.txt
 
 ## Application Design
 Following sequence diagram explains application workflow.
