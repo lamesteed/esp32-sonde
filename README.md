@@ -42,12 +42,16 @@
    Example:
    % idf.py -p /dev/cu.wchusbserial2110 flash
 
-5. To start monitoring serial port for application output
+   For Linux, UART port will be under /dev/ttyUSB0. In some cases, you must enable permissions to read and write from that port with the following command before flash (Fedora):
+   % sudo chmod a+rw /dev/ttyUSB0
+   % idf.py -p /dev/ttyUSB0 flash
+
+6. To start monitoring serial port for application output
    % idf.py -p <PORT> monitor
    Example:
    % idf.py -p /dev/cu.wchusbserial2110 flash
 
-6. Build is based on CMake, to expand project with new includes/sources simply modify main/CMakeLists.txt
+7. Build is based on CMake, to expand project with new includes/sources simply modify main/CMakeLists.txt
 
 ## Application Design
 Following sequence diagram explains application workflow.
@@ -84,3 +88,46 @@ sequenceDiagram
     A ->> M: ok
     M ->> M: reboot
 ```
+
+```mermaid
+classDiagram
+    class ProbeSampler {
+        -int mSampleCounter
+        +ProbeSampler(int samples)
+        +~ProbeSampler()
+        +bool init()
+        +std::string getSample()
+    }
+
+    class OneWire {
+        +OneWire(int pin)
+    }
+
+    class DallasTemperature {
+        +DallasTemperature(OneWire* oneWire)
+        +void begin()
+        +void requestTemperatures()
+        +float getTempCByIndex(int index)
+    }
+
+    ProbeSampler --> OneWire : uses
+    ProbeSampler --> DallasTemperature : uses
+
+    class GlobalFunctions {
+        +std::string twoDecimalString(float value)
+        +float getTemperatureInCelsius(DallasTemperature t)
+        +float getAnalogInputVoltage(int inputPin)
+        +float getTDS(float inputPin, float temperature)
+        +float getConductivity(float inputPin, float temperature)
+        +float getPressure(float inputPin)
+    }
+
+    ProbeSampler : +const char* TAG = "ProbeSampler"
+    ProbeSampler : +float tempC
+    ProbeSampler : +float pressure
+    ProbeSampler : +float tds
+    ProbeSampler : +float conductivity
+    ProbeSampler : +float ADC_COMPENSATION = 1
+    ProbeSampler : +OneWire oneWire(TEMP_SENSOR_INPUT_PIN)
+    ProbeSampler : +DallasTemperature tempSensor(&oneWire)
+    ```

@@ -161,7 +161,8 @@ bool CBluetoothPublisherService::publishData( const SampleDataList & data )
     std::string allData;
     for( const auto & sample : data )
     {
-        allData += sample + " *** ";
+        allData += sample + " ***\n ";
+        
     }
 
     // loop and wait for client to connect and write to characteristic 2

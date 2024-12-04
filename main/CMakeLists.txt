@@ -1,7 +1,7 @@
 idf_component_register(
     SRCS "sonde_main.cpp"
     SRCS "libs/CSondeApp.cpp"
-    SRCS "libs/sampler/CDummySampler.cpp"
+    SRCS "libs/sampler/ProbeSampler.cpp"
     SRCS "libs/publisher/CBluetoothPublisherService.cpp"
     INCLUDE_DIRS ""
     INCLUDE_DIRS "libs"

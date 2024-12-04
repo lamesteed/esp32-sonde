@@ -11,7 +11,7 @@
 // Arduino framework
 #include "Arduino.h"
 
-#include "CDummySampler.h"
+#include "ProbeSampler.h"
 #include "CBluetoothPublisherService.h"
 #include "CSondeApp.h"
 
@@ -24,7 +24,7 @@ extern "C" void app_main(void)
     initArduino();
 
     // Create sampler and publisher
-    CDummySampler sampler( 5 );
+    ProbeSampler sampler( 5 );
     CBluetoothPublisherService publisher;
 
     //Create application and run it
