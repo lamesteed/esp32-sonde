@@ -65,7 +65,6 @@ ProbeSampler::~ProbeSampler(){ESP_LOGI( TAG, "Instance destroyed" );}
 
 bool ProbeSampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
-    Serial.begin(9600);                             // initialize serial
     tempSensor.begin();                             // initialize temperature sensor
     delayMsec( 1000 );
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
