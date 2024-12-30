@@ -12,7 +12,7 @@
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
-float tempC, pressure, tds, conductivity = 0;
+float tempC, pressure_v, pressure, tds_v, tds, conductivity = 0;
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
@@ -36,25 +36,23 @@ float getAnalogInputVoltage (int inputPin) {
     return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
-float getTDS (float inputPin, float temperature) {
-    float v = getAnalogInputVoltage(inputPin);
-    float tds = 434.8 * v;                      // assuming 0v = 0ppm, 2.3v = 1000ppm.
+float getTDS (float tds_input_voltage, float temperature) {
+    float tds = 434.8 * tds_input_voltage;                      // assuming 0v = 0ppm, 2.3v = 1000ppm.
      return (tds > 0) ? tds : 0;
 }
 
-float getConductivity (float inputPin, float temperature) {
+float getConductivity (float tds_input_voltage, float temperature) {
     /* Conductivity = TDS * conversion factor, where
         0.65 - general purpose
         0.5  - sea water
         0.7  - drinking water
         0.8  - hydroponics */
-    float conductivity = getTDS(inputPin, temperature)/0.7; // assuming 0.7 conversion factor
+    float conductivity = getTDS(tds_input_voltage, temperature)/0.7; // assuming 0.7 conversion factor
     return (conductivity > 0) ? conductivity : 0;
 }
 
-float getPressure (float inputPin) {
-        float v = getAnalogInputVoltage(inputPin);
-        float pressure = 25 * v -12.5; // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
+float getPressure (float pressure_input_voltage) {
+        float pressure = 25 * pressure_input_voltage -12.5; // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
         return (pressure > 0) ?  pressure :  0;
 }
 
@@ -67,7 +65,6 @@ ProbeSampler::~ProbeSampler(){ESP_LOGI( TAG, "Instance destroyed" );}
 
 bool ProbeSampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
-    Serial.begin(9600);                             // initialize serial
     tempSensor.begin();                             // initialize temperature sensor
     delayMsec( 1000 );
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
@@ -88,17 +85,19 @@ std::string ProbeSampler::getSample() {
 
         // reading sensors
         tempC = getTemperatureInCelsius(tempSensor);
-        pressure = getPressure (PRESSURE_SENSOR_INPUT_PIN);
-        tds = getTDS(TDS_SENSOR_INPUT_PIN, tempC);
-        conductivity = getConductivity(TDS_SENSOR_INPUT_PIN, tempC);
+        pressure_v = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
+        pressure = getPressure (pressure_v);
+        tds_v = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
+        tds = getTDS(tds_v, tempC);
+        conductivity = getConductivity(tds_v, tempC);
 
         // writing sample data into string to be sent out via bluetooth
         sampleData = "Temperature: " + 
         twoDecimalString(tempC) + "°C\nPressure: " + 
         std::to_string(pressure) +  "psi, " + 
-        twoDecimalString(getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN)) + "v\nTDS: " + 
+        twoDecimalString(pressure_v) + "v\nTDS: " + 
         std::to_string(tds) + "ppm, " + 
-        std::to_string(getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN)) + "v\nConductivity: " + 
+        std::to_string(tds_v) + "v\nConductivity: " + 
         std::to_string(conductivity) + "μS/cm\n" +
         std::to_string( counter++ ) + "\n\n";
         Serial.println("attributes: ");
