@@ -58,6 +58,30 @@ float getPressure (float pressure_input_voltage) {
         return (pressure > 0) ?  pressure :  0;
 }
 
+std::string testModeSampler (std::string sampleData, int counter) {
+    Serial.println("Reading sensors...");
+
+    // reading sensors
+    tempC = getTemperatureInCelsius(tempSensor);
+    pressure_v = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
+    pressure = getPressure (pressure_v);
+    tds_v = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
+    tds = getTDS(tds_v, tempC);
+    conductivity = getConductivity(tds_v, tempC);
+
+    // writing sample data into string to be sent out via bluetooth
+    sampleData = "Temperature: " + 
+    twoDecimalString(tempC) + "°C\nPressure: " + 
+    std::to_string(pressure) +  "psi, " + 
+    twoDecimalString(pressure_v) + "v\nTDS: " + 
+    std::to_string(tds) + "ppm, " + 
+    std::to_string(tds_v) + "v\nConductivity: " + 
+    std::to_string(conductivity) + "μS/cm\n" +
+    std::to_string( counter ) + "\n\n";
+    Serial.println("attributes: ");
+    return sampleData;
+}
+
 ProbeSampler::ProbeSampler( const int samples )
     : mSampleCounter( samples ) {
     ESP_LOGI( TAG, "Instance created (samples = %d)", samples );
@@ -80,36 +104,18 @@ std::string ProbeSampler::getSample() {
     static int counter = 1;
     std::string sampleData = "";
 
-    if (testMode) {
-        ESP_LOGI(TAG, "Probe in TEST MODE");
-    } else {
-        ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
-    }
     if( counter > mSampleCounter ) {
         ESP_LOGI( TAG, "getSample() - no more samples" );
         return "";
     } else {
-        ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
-        Serial.println("Reading sensors...");
-
-        // reading sensors
-        tempC = getTemperatureInCelsius(tempSensor);
-        pressure_v = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
-        pressure = getPressure (pressure_v);
-        tds_v = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
-        tds = getTDS(tds_v, tempC);
-        conductivity = getConductivity(tds_v, tempC);
-
-        // writing sample data into string to be sent out via bluetooth
-        sampleData = "Temperature: " + 
-        twoDecimalString(tempC) + "°C\nPressure: " + 
-        std::to_string(pressure) +  "psi, " + 
-        twoDecimalString(pressure_v) + "v\nTDS: " + 
-        std::to_string(tds) + "ppm, " + 
-        std::to_string(tds_v) + "v\nConductivity: " + 
-        std::to_string(conductivity) + "μS/cm\n" +
-        std::to_string( counter++ ) + "\n\n";
-        Serial.println("attributes: ");
-        return sampleData;
+        if (testMode) {
+            ESP_LOGI(TAG, "Probe in TEST MODE");
+            ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
+            return testModeSampler(sampleData, counter++);
+        } else {
+            ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
+            return "";
+        }
+        
     }
 }
