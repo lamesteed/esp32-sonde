@@ -8,12 +8,14 @@
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
+#define TOGGLE_PIN                4         // pin GPIO4 for the sonde mode switch
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
 float tempC, pressure_v, pressure, tds_v, tds, conductivity = 0;
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
+boolean testMode = 1; 
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
@@ -67,6 +69,8 @@ bool ProbeSampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
     tempSensor.begin();                             // initialize temperature sensor
     delayMsec( 1000 );
+    pinMode(TOGGLE_PIN, INPUT);                     // initialize toggle pin as input
+    testMode = digitalRead(TOGGLE_PIN);             // if 1: true, if 0: false
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
     return true;
 }
@@ -76,6 +80,11 @@ std::string ProbeSampler::getSample() {
     static int counter = 1;
     std::string sampleData = "";
 
+    if (testMode) {
+        ESP_LOGI(TAG, "Probe in TEST MODE");
+    } else {
+        ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
+    }
     if( counter > mSampleCounter ) {
         ESP_LOGI( TAG, "getSample() - no more samples" );
         return "";
