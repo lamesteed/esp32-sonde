@@ -8,12 +8,14 @@
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
+#define TOGGLE_PIN                4         // pin GPIO4 to switch between modes of operation
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
 float tempC, pressure_v, pressure, tds_v, tds, conductivity = 0;
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
+boolean testMode = 1; 
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
@@ -56,6 +58,30 @@ float getPressure (float pressure_input_voltage) {
         return (pressure > 0) ?  pressure :  0;
 }
 
+std::string samplesInTestingMode (std::string sampleData, int counter) {
+    Serial.println("Reading sensors...");
+
+    // reading sensors
+    tempC = getTemperatureInCelsius(tempSensor);
+    pressure_v = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
+    pressure = getPressure (pressure_v);
+    tds_v = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
+    tds = getTDS(tds_v, tempC);
+    conductivity = getConductivity(tds_v, tempC);
+
+    // writing sample data into string to be sent out via bluetooth
+    sampleData = "Temperature: " + 
+    twoDecimalString(tempC) + "°C\nPressure: " + 
+    std::to_string(pressure) +  "psi, " + 
+    twoDecimalString(pressure_v) + "v\nTDS: " + 
+    std::to_string(tds) + "ppm, " + 
+    std::to_string(tds_v) + "v\nConductivity: " + 
+    std::to_string(conductivity) + "μS/cm\n" +
+    std::to_string( counter ) + "\n\n";
+    Serial.println("attributes: ");
+    return sampleData;
+}
+
 ProbeSampler::ProbeSampler( const int samples )
     : mSampleCounter( samples ) {
     ESP_LOGI( TAG, "Instance created (samples = %d)", samples );
@@ -67,6 +93,8 @@ bool ProbeSampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
     tempSensor.begin();                             // initialize temperature sensor
     delayMsec( 1000 );
+    pinMode(TOGGLE_PIN, INPUT);                     // initialize toggle pin as input
+    testMode = digitalRead(TOGGLE_PIN);             // if 1: true, if 0: false
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
     return true;
 }
@@ -80,27 +108,13 @@ std::string ProbeSampler::getSample() {
         ESP_LOGI( TAG, "getSample() - no more samples" );
         return "";
     } else {
-        ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
-        Serial.println("Reading sensors...");
-
-        // reading sensors
-        tempC = getTemperatureInCelsius(tempSensor);
-        pressure_v = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
-        pressure = getPressure (pressure_v);
-        tds_v = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
-        tds = getTDS(tds_v, tempC);
-        conductivity = getConductivity(tds_v, tempC);
-
-        // writing sample data into string to be sent out via bluetooth
-        sampleData = "Temperature: " + 
-        twoDecimalString(tempC) + "°C\nPressure: " + 
-        std::to_string(pressure) +  "psi, " + 
-        twoDecimalString(pressure_v) + "v\nTDS: " + 
-        std::to_string(tds) + "ppm, " + 
-        std::to_string(tds_v) + "v\nConductivity: " + 
-        std::to_string(conductivity) + "μS/cm\n" +
-        std::to_string( counter++ ) + "\n\n";
-        Serial.println("attributes: ");
-        return sampleData;
+        if (testMode) {
+            ESP_LOGI(TAG, "Probe in TEST MODE");
+            ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
+            return samplesInTestingMode(sampleData, counter++);
+        } else {
+            ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
+            return "";
+        }       
     }
 }
