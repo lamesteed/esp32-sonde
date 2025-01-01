@@ -65,10 +65,11 @@ float getPressure (float pressure_input_voltage) {
         float pressure = 25 * pressure_input_voltage -12.5; // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
         return (pressure > 0) ?  pressure :  0;
 }
+
 SampleData readAllSensors() {
     Serial.println("Reading sensors...");
+    SampleData data = {0, 0, 0, 0, 0, 0};;
 
-    SampleData data;
     data.temperature = getTemperatureInCelsius(tempSensor);
     data.pressure_voltage = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
     data.pressure = getPressure(data.pressure_voltage);
@@ -78,8 +79,31 @@ SampleData readAllSensors() {
     return data;
 }
 
+SampleData averageSensorReadings(int numSamples) {
+    SampleData accumulatedData = {0, 0, 0, 0, 0, 0};
 
-std::string sampleDataInTestingMode (SampleData data, int counter) {
+    for (int i = 0; i < numSamples; ++i) {
+        SampleData data = readAllSensors();
+        accumulatedData.temperature += data.temperature;
+        accumulatedData.pressure += data.pressure;
+        accumulatedData.pressure_voltage += data.pressure_voltage;
+        accumulatedData.tds += data.tds;
+        accumulatedData.tds_voltage += data.tds_voltage;
+        accumulatedData.conductivity += data.conductivity;
+        delayMsec( 10 );                               // delay 10ms between each sample
+    }
+
+    accumulatedData.temperature /= numSamples;
+    accumulatedData.pressure /= numSamples;
+    accumulatedData.pressure_voltage /= numSamples;
+    accumulatedData.tds /= numSamples;
+    accumulatedData.tds_voltage /= numSamples;
+    accumulatedData.conductivity /= numSamples;
+
+    return accumulatedData;
+}
+
+std::string writeSampleDataInTestingMode (SampleData data, int counter) {
 
     // writing sample data into string to be sent out via bluetooth
     return "Temperature: " + 
@@ -111,7 +135,6 @@ bool ProbeSampler::init() {
 }
 
 std::string ProbeSampler::getSample() {
-    delayMsec( 1000 );
     static int counter = 1;
 
     if( counter > mSampleCounter ) {
@@ -121,7 +144,7 @@ std::string ProbeSampler::getSample() {
         if (testMode) {
             ESP_LOGI(TAG, "Probe in TEST MODE");
             ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
-            return sampleDataInTestingMode(readAllSensors(), counter++);
+            return writeSampleDataInTestingMode(averageSensorReadings(10), counter++);
         } else {
             ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
             return "";
