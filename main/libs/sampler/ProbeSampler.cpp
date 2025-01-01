@@ -13,7 +13,15 @@
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
-float tempC, pressure_v, pressure, tds_v, tds, conductivity = 0;
+struct SampleData {
+    float temperature;
+    float pressure_voltage;
+    float pressure;
+    float tds_voltage;
+    float tds;
+    float conductivity;
+};
+
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
 boolean testMode = 1; 
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
@@ -58,28 +66,55 @@ float getPressure (float pressure_input_voltage) {
         return (pressure > 0) ?  pressure :  0;
 }
 
-std::string samplesInTestingMode (std::string sampleData, int counter) {
+SampleData readAllSensors() {
     Serial.println("Reading sensors...");
+    SampleData data = {0, 0, 0, 0, 0, 0};;
 
-    // reading sensors
-    tempC = getTemperatureInCelsius(tempSensor);
-    pressure_v = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
-    pressure = getPressure (pressure_v);
-    tds_v = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
-    tds = getTDS(tds_v, tempC);
-    conductivity = getConductivity(tds_v, tempC);
+    data.temperature = getTemperatureInCelsius(tempSensor);
+    data.pressure_voltage = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
+    data.pressure = getPressure(data.pressure_voltage);
+    data.tds_voltage = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
+    data.tds = getTDS(data.tds_voltage, data.temperature);
+    data.conductivity = getConductivity(data.tds_voltage, data.temperature);
+    return data;
+}
+
+SampleData averageSensorReadings(int numSamples) {
+    SampleData accumulatedData = {0, 0, 0, 0, 0, 0};
+
+    for (int i = 0; i < numSamples; ++i) {
+        SampleData data = readAllSensors();
+        accumulatedData.temperature += data.temperature;
+        accumulatedData.pressure += data.pressure;
+        accumulatedData.pressure_voltage += data.pressure_voltage;
+        accumulatedData.tds += data.tds;
+        accumulatedData.tds_voltage += data.tds_voltage;
+        accumulatedData.conductivity += data.conductivity;
+        delayMsec( 10 );                               // delay 10ms between each sample
+    }
+
+    accumulatedData.temperature /= numSamples;
+    accumulatedData.pressure /= numSamples;
+    accumulatedData.pressure_voltage /= numSamples;
+    accumulatedData.tds /= numSamples;
+    accumulatedData.tds_voltage /= numSamples;
+    accumulatedData.conductivity /= numSamples;
+
+    return accumulatedData;
+}
+
+std::string writeSampleDataInTestingMode (SampleData data, int counter) {
 
     // writing sample data into string to be sent out via bluetooth
-    sampleData = "Temperature: " + 
-    twoDecimalString(tempC) + "°C\nPressure: " + 
-    std::to_string(pressure) +  "psi, " + 
-    twoDecimalString(pressure_v) + "v\nTDS: " + 
-    std::to_string(tds) + "ppm, " + 
-    std::to_string(tds_v) + "v\nConductivity: " + 
-    std::to_string(conductivity) + "μS/cm\n" +
+    return "Temperature: " + 
+    twoDecimalString(data.temperature) + "°C\nPressure: " + 
+    std::to_string(data.pressure) +  "psi, " + 
+    twoDecimalString(data.pressure_voltage) + "v\nTDS: " + 
+    std::to_string(data.tds) + "ppm, " + 
+    std::to_string(data.tds_voltage) + "v\nConductivity: " + 
+    std::to_string(data.conductivity) + "μS/cm\n" +
     std::to_string( counter ) + "\n\n";
     Serial.println("attributes: ");
-    return sampleData;
 }
 
 ProbeSampler::ProbeSampler( const int samples )
@@ -100,9 +135,7 @@ bool ProbeSampler::init() {
 }
 
 std::string ProbeSampler::getSample() {
-    delayMsec( 1000 );
     static int counter = 1;
-    std::string sampleData = "";
 
     if( counter > mSampleCounter ) {
         ESP_LOGI( TAG, "getSample() - no more samples" );
@@ -111,7 +144,7 @@ std::string ProbeSampler::getSample() {
         if (testMode) {
             ESP_LOGI(TAG, "Probe in TEST MODE");
             ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
-            return samplesInTestingMode(sampleData, counter++);
+            return writeSampleDataInTestingMode(averageSensorReadings(10), counter++);
         } else {
             ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
             return "";
