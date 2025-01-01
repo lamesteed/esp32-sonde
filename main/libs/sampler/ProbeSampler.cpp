@@ -8,7 +8,7 @@
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
-#define TOGGLE_PIN                4         // pin GPIO4 for the sonde mode switch
+#define TOGGLE_PIN                4         // pin GPIO4 to switch between modes of operation
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
@@ -58,7 +58,7 @@ float getPressure (float pressure_input_voltage) {
         return (pressure > 0) ?  pressure :  0;
 }
 
-std::string testModeSampler (std::string sampleData, int counter) {
+std::string samplesInTestingMode (std::string sampleData, int counter) {
     Serial.println("Reading sensors...");
 
     // reading sensors
@@ -111,11 +111,10 @@ std::string ProbeSampler::getSample() {
         if (testMode) {
             ESP_LOGI(TAG, "Probe in TEST MODE");
             ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
-            return testModeSampler(sampleData, counter++);
+            return samplesInTestingMode(sampleData, counter++);
         } else {
             ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
             return "";
-        }
-        
+        }       
     }
 }
