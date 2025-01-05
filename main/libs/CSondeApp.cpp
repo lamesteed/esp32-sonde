@@ -1,13 +1,12 @@
 #include "CSondeApp.h"
+#include "publisher/CBluetoothPublisherService.h"
+#include "command/CCommandProcessor.h"
 
 #include "esp_log.h"
 
 const char * CSondeApp::TAG = "CSondeApp";
 
-CSondeApp::CSondeApp( ISampler & sampler,
-                      IDataPublisherService & publisher )
-    : mSampler( sampler )
-    , mPublisher( publisher )
+CSondeApp::CSondeApp()
 {
     ESP_LOGI( TAG, "Instance created" );
 }
@@ -16,30 +15,23 @@ void CSondeApp::run()
 {
     ESP_LOGI( TAG, "Running ..." );
 
-    IDataPublisherService::SampleDataList data;
+    //Create BT Service
+    CBluetoothPublisherService publisher;
+    IDataPublisherService & rPublisher = publisher;
 
-    // Initialize sampler
-    if( !mSampler.init() )
-    {
-        ESP_LOGE( TAG, "Sampler initialization failed" );
-        return;
-    }
+    // Create command processor
+    CCommandProcessor processor( rPublisher );
+    ICommandListener * pCmdListener = &processor;
 
-    // Retrieve samples
+    // Specify listener for incoming Bluetooth commands
+    publisher.setNotificationListener( pCmdListener );
+
+    // Start BT Service to wait for client commands
+    rPublisher.start();
+
+    // Enter command processing loop
     while( true )
     {
-        std::string sample = mSampler.getSample();
-        if( sample.empty() )
-        {
-            ESP_LOGI( TAG, "No more samples available, publishing" );
-            break;
-        }
-
-        data.push_back( sample );
+        processor.processCommands();
     }
-
-    // Publish collected data
-    mPublisher.publishData( data );
-
-    ESP_LOGI( TAG, "Data published, run() complete" );
 }

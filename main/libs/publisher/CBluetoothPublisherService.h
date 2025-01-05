@@ -9,6 +9,7 @@
 
 class BLEDescriptor;
 class BLE2902;
+class ICommandListener;
 
 class CBluetoothPublisherService : public IDataPublisherService
                                  , public BLEServerCallbacks
@@ -17,16 +18,20 @@ class CBluetoothPublisherService : public IDataPublisherService
 public:
     CBluetoothPublisherService();
     virtual ~CBluetoothPublisherService();
+
+    void setNotificationListener( ICommandListener * pListener );
 private:
     // IDataPublisherService interface
-    virtual bool publishData( const SampleDataList & data ) override;
+    virtual bool start() override;
+    virtual bool stop() override;
+    virtual bool publishData( const std::string & data, bool sendEOD ) override;
 
     // BLEServerCallbacks interface
-    virtual void onConnect(BLEServer* pServer) override;
-    virtual void onDisconnect(BLEServer* pServer) override;
+    virtual void onConnect( BLEServer * pServer ) override;
+    virtual void onDisconnect( BLEServer * pServer ) override;
 
     // BLECharacteristicCallbacks interface
-    virtual void onWrite(BLECharacteristic *pChar) override;
+    virtual void onWrite( BLECharacteristic * pChar ) override;
 
 private:
     /// @brief Initialize BLE service
@@ -37,11 +42,13 @@ private:
     static const char * BLE_DEVICE_NAME;    ///< BLE device name
     static const char * SERVICE_UUID;       ///< UUID for service
     static const char * CHAR_NOTIFY_UUID;   ///< UUID for notification characteristic (used to send data to client)
-    static const char * CHAR_RX_UUID;       ///< UUID for Read/Write characteristic (client uses it to initiate data transfer)
+    static const char * CHAR_RX_CMD_UUID;   ///< UUID for Read/Write characteristic (client uses it to initiate data transfer)
 
-    BLEServer * mServer;                        ///< BLE server instance
+    ICommandListener  * mNotificationListener;  ///< Listener for commands from BT client
+
+    BLEServer         * mServer;                ///< BLE server instance
     BLECharacteristic * mNotifyCharacteristic;  ///< Notify characteristic to send data to client
-    BLECharacteristic * mRxCharacteristic;      ///< Read/Write characteristic to initiate data transfer
+    BLECharacteristic * mRxCmdCharacteristic;   ///< Read/Write characteristic to initiate data transfer
 
     std::shared_ptr<BLEDescriptor> mNotifyDescriptor2901; ///< BLE descriptor 2901 for Notify characteristic
     std::shared_ptr<BLE2902> mNotifyDescriptor2902;       ///< BLE descriptor 2902 for Notify characteristic
@@ -49,7 +56,7 @@ private:
     std::shared_ptr<BLE2902> mRxDescriptor2902;           ///< BLE descriptor 2902 for Read/Write characteristic
 
     bool mDeviceConnected;                  ///< Flag indicating if device is connected
-    bool mNotificationsListenerReady;       ///< Flag indicating if client is ready to receive notifications
+    std::string mCurrentCommand;            ///< Current command received from client
 };
 
 #endif // CBLUETOOTHPUBLISHERSERVICE_H

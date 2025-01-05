@@ -12,7 +12,6 @@
 #include "Arduino.h"
 
 #include "ProbeSampler.h"
-#include "CBluetoothPublisherService.h"
 #include "CSondeApp.h"
 
 // Tag for logging
@@ -23,13 +22,8 @@ extern "C" void app_main(void)
     // Initialize the Arduino framework
     initArduino();
 
-    // Create sampler and publisher
-    ProbeSampler sampler( 5 );
-    CBluetoothPublisherService publisher;
-
     //Create application and run it
-    CSondeApp app( sampler, publisher );
-    app.run();
+    CSondeApp().run();
 
     // Restart the device
     for (int i = 10; i >= 0; i--) {

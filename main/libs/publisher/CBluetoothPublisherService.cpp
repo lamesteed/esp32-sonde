@@ -1,6 +1,7 @@
 
 #include "CBluetoothPublisherService.h"
 
+#include "ICommandListener.h"
 #include "BLEDevice.h"
 #include "BLEUtils.h"
 #include "BLE2902.h"
@@ -13,18 +14,19 @@ const char * CBluetoothPublisherService::TAG               = "CBluetoothPublishe
 const char * CBluetoothPublisherService::BLE_DEVICE_NAME   = "ESP32-Sonde";
 const char * CBluetoothPublisherService::SERVICE_UUID      = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const char * CBluetoothPublisherService::CHAR_NOTIFY_UUID  = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-const char * CBluetoothPublisherService::CHAR_RX_UUID      = "e3223119-9445-4e96-a4a1-85358c4046a2";
+const char * CBluetoothPublisherService::CHAR_RX_CMD_UUID  = "e3223119-9445-4e96-a4a1-85358c4046a2";
 
 CBluetoothPublisherService::CBluetoothPublisherService()
-    : mServer( nullptr )
+    : mNotificationListener( nullptr )
+    , mServer( nullptr )
     , mNotifyCharacteristic( nullptr )
-    , mRxCharacteristic( nullptr )
+    , mRxCmdCharacteristic( nullptr )
     , mNotifyDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
     , mNotifyDescriptor2902( new BLE2902() )
     , mRxDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
     , mRxDescriptor2902( new BLE2902() )
     , mDeviceConnected( false )
-    , mNotificationsListenerReady( false )
+    , mCurrentCommand()
 {
     ESP_LOGI( TAG, "Instance created" );
     // configure descriptors
@@ -35,9 +37,14 @@ CBluetoothPublisherService::CBluetoothPublisherService()
 
 CBluetoothPublisherService::~CBluetoothPublisherService()
 {
+    stop();
     ESP_LOGI( TAG, "Instance destroyed" );
 }
 
+void CBluetoothPublisherService::setNotificationListener( ICommandListener * pListener )
+{
+    mNotificationListener = pListener;
+}
 
 // BLEServerCallbacks interface implementation
 void CBluetoothPublisherService::onConnect(BLEServer* pServer)
@@ -48,8 +55,10 @@ void CBluetoothPublisherService::onConnect(BLEServer* pServer)
 void CBluetoothPublisherService::onDisconnect(BLEServer* pServer)
 {
     ESP_LOGW(TAG, "Device disconnected");
-    mNotificationsListenerReady = false;
+    mCurrentCommand = "";
     mDeviceConnected = false;
+    // Start service advertising again as advertising automatically stops when device is connected
+    BLEDevice::startAdvertising();
 }
 // BLEServerCallbacks interface implementation end
 
@@ -57,14 +66,31 @@ void CBluetoothPublisherService::onDisconnect(BLEServer* pServer)
 // BLECharacteristicCallbacks interface implementation
 void CBluetoothPublisherService::onWrite(BLECharacteristic *pChar)
 {
-    ESP_LOGI( TAG, "onWrite() - data received, enble notifications" );
-    mNotificationsListenerReady = true;
+    ESP_LOGI( TAG, "onWrite() - data received, characteristic = %s", pChar->getUUID().toString().c_str() );
+
+    mCurrentCommand.assign( pChar->getValue().c_str() );
+    ESP_LOGI( TAG, "onWrite() - data received: %s", mCurrentCommand.c_str() );
+
+    // Notify listener about new command
+    if ( mNotificationListener )
+    {
+        mNotificationListener->onCommandReceived( mCurrentCommand, std::string() );
+    }
+    else
+    {
+        ESP_LOGE( TAG, "onWrite() - no listener to notify" );
+    }
 }
 // BLECharacteristicCallbacks interface implementation end
 
-
-bool CBluetoothPublisherService::initBLEService()
+bool CBluetoothPublisherService::start()
 {
+    if ( BLEDevice::getInitialized() )
+    {
+        ESP_LOGI( TAG, "BLE already initialized" );
+        return true;
+    }
+
     // Create the BLE Device
     BLEDevice::init( "" );
 
@@ -85,7 +111,7 @@ bool CBluetoothPublisherService::initBLEService()
         return false;
     }
 
-    // Create Notify characteristic (used to send data to client)
+    // Create Notify characteristic (is used to send data to client)
     // Add 2901 and 2902 descriptors
     mNotifyCharacteristic =
         pService->createCharacteristic( CHAR_NOTIFY_UUID,
@@ -96,13 +122,13 @@ bool CBluetoothPublisherService::initBLEService()
         return false;
     }
 
-    // Create Read/Write characteristic (client uses it to initiate data transfer)
+    // Create Read/Write characteristic (client uses it to specify command)
     // Add 2901 and 2902 descriptors
     // Also add callback to trigger data transfer
-    mRxCharacteristic =
-        pService->createCharacteristic( CHAR_RX_UUID,
+    mRxCmdCharacteristic =
+        pService->createCharacteristic( CHAR_RX_CMD_UUID,
                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE );
-    if ( !mRxCharacteristic )
+    if ( !mRxCmdCharacteristic )
     {
         ESP_LOGE( TAG, "BLE Read/Write characteristic creation failed" );
         return false;
@@ -111,9 +137,9 @@ bool CBluetoothPublisherService::initBLEService()
     mNotifyCharacteristic->addDescriptor( mNotifyDescriptor2901.get() );
     mNotifyCharacteristic->addDescriptor( mNotifyDescriptor2902.get() );
 
-    mRxCharacteristic->addDescriptor( mRxDescriptor2901.get() );
-    mRxCharacteristic->addDescriptor( mRxDescriptor2902.get() );
-    mRxCharacteristic->setCallbacks( this );
+    mRxCmdCharacteristic->addDescriptor( mRxDescriptor2901.get() );
+    mRxCmdCharacteristic->addDescriptor( mRxDescriptor2902.get() );
+    mRxCmdCharacteristic->setCallbacks( this );
 
     // Start the BLE service
     pService->start();
@@ -136,57 +162,78 @@ bool CBluetoothPublisherService::initBLEService()
     scanResponseData.setName( BLE_DEVICE_NAME );
     pAdvertising->setScanResponseData(scanResponseData);
 
-    BLEDevice::startAdvertising();
+    pAdvertising->start();
 
     return true;
 }
 
-bool CBluetoothPublisherService::publishData( const SampleDataList & data )
+bool CBluetoothPublisherService::stop()
+{
+    ESP_LOGI( TAG, "stop() - stopping BLE service" );
+
+    if ( !BLEDevice::getInitialized() )
+    {
+        ESP_LOGI( TAG, "BLE not initialized" );
+        return true;
+    }
+
+    // stop advertising
+    BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
+    if( pAdvertising )
+    {
+        pAdvertising->stop();
+        ESP_LOGI( TAG, "Advertising stopped" );
+    }
+
+    // stop service
+    if ( mServer )
+    {
+        BLEService *pService = mServer->getServiceByUUID( SERVICE_UUID );
+        if ( pService )
+        {
+            pService->stop();
+            ESP_LOGI( TAG, "Service stopped" );
+        }
+    }
+
+    // deinit BLE
+    BLEDevice::deinit( true );
+    mServer = nullptr;
+    mNotifyCharacteristic = nullptr;
+    mRxCmdCharacteristic = nullptr;
+
+    ESP_LOGI( TAG, "BLE stopped" );
+    return true;
+}
+
+bool CBluetoothPublisherService::publishData( const std::string & data, bool sendEOD )
 {
     ESP_LOGI( TAG, "publishData() - publishing data ..." );
-    // start BLE service that has two characteristics
-    // One is Read/Write will be used to initiate data transfer once client connects and writes to it
-    // Second is Notify only, will be used to send data to client
-    if ( !initBLEService() )
+    if ( !mDeviceConnected || mCurrentCommand.empty() )
     {
-        ESP_LOGE( TAG, "BLE initialization failed" );
+        ESP_LOGE( TAG, "publishData() - device not connected or not ready to receive data" );
         return false;
     }
 
-    ESP_LOGI(TAG, "BLE Service started, waiting for connection ...");
-
-    // concatenate all data samples into one string separated by new line
-    // this will be sent to client in 20 bytes chunks
-    // each chunk will be sent as a separate notification
-    std::string allData;
-    for( const auto & sample : data )
+    std::string allData = data;
+    // send data in 20 bytes chunks (each chunk is a separate notification)
+    while ( !allData.empty() )
     {
-        allData += sample + " ***\n ";
-        
+        std::string chunk = allData.substr( 0, 20 );
+        allData.erase( 0, 20 );
+        mNotifyCharacteristic->setValue( String( chunk.c_str(), chunk.size() ) );
+        mNotifyCharacteristic->notify();
+        ESP_LOGI( TAG, "publishData() - data sent: %s (%d bytes)", chunk.c_str(), chunk.size() );
+        delayMsec( 500 );
     }
 
-    // loop and wait for client to connect and write to characteristic 2
-    // send all data to client (20 bytes at a time) using characteristic 1
-    while ( true )
+    if ( sendEOD )
     {
-        if ( mDeviceConnected && mNotificationsListenerReady )
-        {
-            ESP_LOGI( TAG, "publishData() - device connected and ready to receive data" );
-            // send data in 20 bytes chunks (each chunk is a separate notification)
-            while ( !allData.empty() )
-            {
-                std::string chunk = allData.substr( 0, 20 );
-                allData.erase( 0, 20 );
-                mNotifyCharacteristic->setValue( String( chunk.c_str(), chunk.size() ) );
-                mNotifyCharacteristic->notify();
-                ESP_LOGI( TAG, "publishData() - data sent: %s (%d bytes)", chunk.c_str(), chunk.size() );
-                delayMsec( 500 );
-            }
-
-            break;
-        }
-
-        delayMsec( 1000 );
+        static const String EOD = "END_OF_DATA";
+        // send EOD (End Of Data) notification
+        mNotifyCharacteristic->setValue( EOD );
+        mNotifyCharacteristic->notify();
+        ESP_LOGI( TAG, "publishData() - EOD sent" );
     }
 
     //once all data sent - return, this will conclude application cycle
