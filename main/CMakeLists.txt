@@ -6,6 +6,7 @@ idf_component_register(
     SRCS "libs/publisher/CBluetoothPublisherService.cpp"
     SRCS "libs/command/CCommandProcessor.cpp"
     SRCS "libs/command/CTestModeCommand.cpp"
+    SRCS "libs/command/CRebootCommand.cpp"
     INCLUDE_DIRS ""
     INCLUDE_DIRS "libs"
     INCLUDE_DIRS "libs/publisher"

@@ -2,7 +2,6 @@
 #define CCOMMANDPROCESSOR_H
 
 #include "ICommandListener.h"
-#include "IDataPublisherService.h"
 #include "ICommand.h"
 
 #include <queue>
@@ -10,11 +9,14 @@
 #include <mutex>
 #include <condition_variable>
 
+class IRebootable;
+class IDataPublisherService;
+
 class CCommandProcessor : public ICommandListener
 {
 public:
     /// @brief Default constructor
-    CCommandProcessor( IDataPublisherService & publisher );
+    CCommandProcessor( IDataPublisherService & publisher, IRebootable & rebootable );
 
     /// @brief Destructor
     virtual ~CCommandProcessor();
@@ -29,8 +31,10 @@ private:
 private:
     static const char * TAG;                ///< Logger tag
     static const char * CMD_TESTMODE;       ///< Command name for test mode
+    static const char * CMD_REBOOT;         ///< Command name for reboot
 
     IDataPublisherService & mPublisher;
+    IRebootable & mRebootable;
 
     std::queue<std::shared_ptr<ICommand>> mCommandQueue;
     std::mutex mQueueMutex;

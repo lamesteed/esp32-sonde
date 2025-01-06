@@ -1,13 +1,18 @@
 #include "CCommandProcessor.h"
+#include "IDataPublisherService.h"
+#include "IRebootable.h"
 #include "CTestModeCommand.h"
+#include "CRebootCommand.h"
 #include "esp_log.h"
 
 // constants definition
 const char * CCommandProcessor::TAG = "CCommandProcessor";
 const char * CCommandProcessor::CMD_TESTMODE = "TESTMODE";
+const char * CCommandProcessor::CMD_REBOOT = "REBOOT";
 
-CCommandProcessor::CCommandProcessor( IDataPublisherService & publisher )
+CCommandProcessor::CCommandProcessor( IDataPublisherService & publisher, IRebootable & rebootable )
     : mPublisher( publisher )
+    , mRebootable( rebootable )
     , mCommandQueue()
     , mQueueMutex()
     , mCondvar()
@@ -36,6 +41,20 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
         }
         // notify the processor thread that new command is available for execution
         mCondvar.notify_one();
+    } else if ( !command.compare( CMD_REBOOT ) )
+    {
+        // create and execute reboot command
+        std::shared_ptr<ICommand> cmd( new CRebootCommand( mPublisher, mRebootable ) );
+        // lock the queue and push the command
+        {
+            std::lock_guard<std::mutex> lock( mQueueMutex );
+            mCommandQueue.push( cmd );
+        }
+        // notify the processor thread that new command is available for execution
+        mCondvar.notify_one();
+    } else
+    {
+        ESP_LOGE( TAG, "onCommandReceived() - unknown command: %s", command.c_str() );
     }
 }
 

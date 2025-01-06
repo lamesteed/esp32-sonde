@@ -1,7 +1,9 @@
 #ifndef CSONDEAPP_H
 #define CSONDEAPP_H
 
-class CSondeApp
+#include "IRebootable.h"
+
+class CSondeApp : public IRebootable
 {
 public:
     CSondeApp();
@@ -10,6 +12,11 @@ public:
 
 private:
     static const char * TAG;
+
+    // IRebootable interface
+    virtual void reboot() override;
+
+    bool mRebootPending;
 };
 
 #endif // CSONDEAPP_H
