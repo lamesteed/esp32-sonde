@@ -4,7 +4,7 @@
 1. Client was created using MIT App Inventor platoform
    To start create/loging to your account at https://appinventor.mit.edu/
 
-2. Import project BLE_controller.aia
+2. Import project Sentry226.aia
 
 3. The project is based on the example provided in this video tutorial
    https://youtu.be/RvbWl8rZOoQ?si=pZsIaVzMO03b3WGp
