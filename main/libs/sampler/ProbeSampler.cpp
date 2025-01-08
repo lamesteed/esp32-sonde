@@ -23,7 +23,7 @@ struct SampleData {
 };
 
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
-boolean testMode = 1; 
+boolean testMode = 1;
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
@@ -106,12 +106,12 @@ SampleData averageSensorReadings(int numSamples) {
 std::string writeSampleDataInTestingMode (SampleData data, int counter) {
 
     // writing sample data into string to be sent out via bluetooth
-    return "Temperature: " + 
-    twoDecimalString(data.temperature) + "°C\nPressure: " + 
-    std::to_string(data.pressure) +  "psi, " + 
-    twoDecimalString(data.pressure_voltage) + "v\nTDS: " + 
-    std::to_string(data.tds) + "ppm, " + 
-    std::to_string(data.tds_voltage) + "v\nConductivity: " + 
+    return "Temperature: " +
+    twoDecimalString(data.temperature) + "°C\nPressure: " +
+    std::to_string(data.pressure) +  "psi, " +
+    twoDecimalString(data.pressure_voltage) + "v\nTDS: " +
+    std::to_string(data.tds) + "ppm, " +
+    std::to_string(data.tds_voltage) + "v\nConductivity: " +
     std::to_string(data.conductivity) + "μS/cm\n" +
     std::to_string( counter ) + "\n\n";
     Serial.println("attributes: ");
@@ -136,18 +136,14 @@ bool ProbeSampler::init() {
 
 std::string ProbeSampler::getSample() {
     static int counter = 1;
-
-    if( counter > mSampleCounter ) {
-        ESP_LOGI( TAG, "getSample() - no more samples" );
+    if ( testMode )
+    {
+        ESP_LOGI(TAG, "Probe in TEST MODE");
+        ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
+        return writeSampleDataInTestingMode( averageSensorReadings( 10 ), counter++ );
+    } else
+    {
+        ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
         return "";
-    } else {
-        if (testMode) {
-            ESP_LOGI(TAG, "Probe in TEST MODE");
-            ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
-            return writeSampleDataInTestingMode(averageSensorReadings(10), counter++);
-        } else {
-            ESP_LOGI(TAG, "Probe in FIELD SAMPLING MODE");
-            return "";
-        }       
     }
 }
