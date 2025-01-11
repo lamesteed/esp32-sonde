@@ -10,12 +10,16 @@ const char * CCommandProcessor::TAG = "CCommandProcessor";
 const char * CCommandProcessor::CMD_TESTMODE = "TESTMODE";
 const char * CCommandProcessor::CMD_REBOOT = "REBOOT";
 
-CCommandProcessor::CCommandProcessor( IDataPublisherService & publisher, IRebootable & rebootable )
-    : mPublisher( publisher )
-    , mRebootable( rebootable )
-    , mCommandQueue()
-    , mQueueMutex()
-    , mCondvar()
+CCommandProcessor::CCommandProcessor(
+    const ISampler::Ptr & sampler,
+    const IDataPublisherService::Ptr & publisher,
+    const IRebootable::Ptr & rebootable )
+        : mSampler( sampler )
+        , mPublisher( publisher )
+        , mRebootable( rebootable )
+        , mCommandQueue()
+        , mQueueMutex()
+        , mCondvar()
 {
     ESP_LOGI( TAG, "Instance created" );
 }
@@ -25,36 +29,32 @@ CCommandProcessor::~CCommandProcessor()
     ESP_LOGI( TAG, "Instance destroyed" );
 }
 
-void CCommandProcessor::onCommandReceived( const std::string & command, const std::string args )
+void CCommandProcessor::onCommandReceived( const std::string & command, const std::string & args )
 {
     ESP_LOGI( TAG, "onCommandReceived() - command: %s, args: %s", command.c_str(), args.c_str() );
+
+    ICommand::Ptr cmd;
 
     if ( !command.compare( CMD_TESTMODE ) )
     {
         // create and execute test mode command
         static const int SAMPLES_COUNT = 5;
-        std::shared_ptr<ICommand> cmd( new CTestModeCommand( mPublisher, SAMPLES_COUNT ) );
-        // lock the queue and push the command
-        {
-            std::lock_guard<std::mutex> lock( mQueueMutex );
-            mCommandQueue.push( cmd );
-        }
-        // notify the processor thread that new command is available for execution
-        mCondvar.notify_one();
+        cmd = std::make_shared<CTestModeCommand>( mSampler, mPublisher, SAMPLES_COUNT );
     } else if ( !command.compare( CMD_REBOOT ) )
     {
         // create and execute reboot command
-        std::shared_ptr<ICommand> cmd( new CRebootCommand( mPublisher, mRebootable ) );
-        // lock the queue and push the command
-        {
-            std::lock_guard<std::mutex> lock( mQueueMutex );
-            mCommandQueue.push( cmd );
-        }
-        // notify the processor thread that new command is available for execution
-        mCondvar.notify_one();
+        cmd = std::make_shared<CRebootCommand>( mPublisher, mRebootable );
     } else
     {
         ESP_LOGE( TAG, "onCommandReceived() - unknown command: %s", command.c_str() );
+    }
+
+    // if cmd is not null, add it to the queue
+    if ( cmd != nullptr )
+    {
+        std::lock_guard<std::mutex> lock( mQueueMutex );
+        mCommandQueue.push( cmd );
+        mCondvar.notify_one();
     }
 }
 

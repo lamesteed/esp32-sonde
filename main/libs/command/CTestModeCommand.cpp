@@ -5,14 +5,12 @@
 
 #include <memory>
 
-CTestModeCommand::CTestModeCommand( IDataPublisherService & publisher, int samplesCount )
-    : mPublisher( publisher )
-    , mSamplesCount( samplesCount )
-{
-
-}
-
-CTestModeCommand::~CTestModeCommand()
+CTestModeCommand::CTestModeCommand(
+    const ISampler::Ptr & sampler,
+    const IDataPublisherService::Ptr & publisher, int samplesCount )
+        : mSampler( sampler )
+        , mPublisher( publisher )
+        , mSamplesCount( samplesCount )
 {
 
 }
@@ -25,28 +23,26 @@ std::string CTestModeCommand::getDescription() const
 
 bool CTestModeCommand::execute()
 {
-    // Create and init sampler
-    std::shared_ptr<ISampler> sampler( new ProbeSampler( mSamplesCount ) );
-//    std::shared_ptr<ISampler> sampler( new CDummySampler() );
-    if ( !sampler->init() )
+    // initialize sampler
+    if ( !mSampler->init() )
     {
-        mPublisher.publishData( "Sampler initialization failed", true );
+        mPublisher->publishData( "Sampler initialization failed", true );
         return false;
     }
 
     // collect samples mSampleCount times and publish each sample
     for ( int i = 0; i < mSamplesCount; i++ )
     {
-        std::string sample = sampler->getSample();
+        std::string sample = mSampler->getSample();
         if ( sample.empty() )
         {
-            mPublisher.publishData( "Failed to get next sample", true );
+            mPublisher->publishData( "Failed to get next sample", true );
             return false;
         }
 
         bool sendEOD = ( i == mSamplesCount - 1 );
 
-        if ( !mPublisher.publishData( sample, sendEOD ) )
+        if ( !mPublisher->publishData( sample, sendEOD ) )
         {
             return false;
         }

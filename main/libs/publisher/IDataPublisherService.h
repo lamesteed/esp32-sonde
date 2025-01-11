@@ -1,19 +1,17 @@
 #ifndef IDATAPUBLISHERSERVICE_H
 #define IDATAPUBLISHERSERVICE_H
 
-#include <list>
-#include <string>
+#include<memory>
+
+class ICommandListener;
 
 class IDataPublisherService
 {
 public:
-    typedef std::string SampleData;
-    typedef std::list<SampleData> SampleDataList;
+    using Ptr =  std::shared_ptr<IDataPublisherService>;
 
     /// @brief Virtual destructor
-    virtual ~IDataPublisherService()
-    {
-    }
+    virtual ~IDataPublisherService() = default;
 
     /// @brief Initializes and starts data publishing service
     /// @return true if service started successfully, false otherwise
@@ -27,6 +25,8 @@ public:
     /// @param data string-serilized data to be published for consumer
     /// @return true if data published successfully, false otherwise
     virtual bool publishData( const std::string & data, bool sendEOD ) = 0;
+
+    virtual void setNotificationListener( ICommandListener * listener ) = 0;
 };
 
 #endif // IDATAPUBLISHERSERVICE_H

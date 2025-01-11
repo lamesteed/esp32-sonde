@@ -2,23 +2,24 @@
 #define CREBOOTCOMMAND_H
 
 #include "ICommand.h"
-
-class IDataPublisherService;
-class IRebootable;
+#include "IDataPublisherService.h"
+#include "IRebootable.h"
 
 class CRebootCommand : public ICommand
 {
 public:
-    CRebootCommand( IDataPublisherService & publisher, IRebootable & rebootable );
-    virtual ~CRebootCommand();
+    CRebootCommand(
+        const IDataPublisherService::Ptr & publisher,
+        const IRebootable::Ptr & rebootable );
+    virtual ~CRebootCommand() = default;
 
 private:
     // ICommand interface
     virtual std::string getDescription() const override;
     virtual bool execute() override;
 
-    IDataPublisherService & mPublisher;
-    IRebootable & mRebootable;
+    IDataPublisherService::Ptr mPublisher;
+    IRebootable::Ptr mRebootable;
 };
 
 #endif // CREBOOTCOMMAND_H

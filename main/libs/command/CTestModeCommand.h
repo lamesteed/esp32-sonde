@@ -2,14 +2,16 @@
 #define CTESTMODECOMMAND_H
 
 #include "ICommand.h"
-
-class IDataPublisherService;
+#include "ISampler.h"
+#include "IDataPublisherService.h"
 
 class CTestModeCommand : public ICommand
 {
 public:
-    CTestModeCommand( IDataPublisherService & publisher, int samplesCount );
-    virtual ~CTestModeCommand();
+    CTestModeCommand(
+        const ISampler::Ptr & sampler,
+        const IDataPublisherService::Ptr & publisher, int samplesCount );
+    virtual ~CTestModeCommand() = default;
 
 private:
     // ICommand interface
@@ -17,7 +19,8 @@ private:
     virtual bool execute() override;
 
 private:
-    IDataPublisherService & mPublisher;
+    ISampler::Ptr mSampler;
+    IDataPublisherService::Ptr mPublisher;
     int mSamplesCount;
 };
 

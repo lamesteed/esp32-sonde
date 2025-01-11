@@ -1,10 +1,14 @@
 #ifndef IREBOOTABLE_H
 #define IREBOOTABLE_H
 
-class IRebootable
+#include <memory>
+
+class IRebootable : public std::enable_shared_from_this<IRebootable>
 {
 public:
-    virtual ~IRebootable() {}
+    using Ptr = std::shared_ptr<IRebootable>;
+
+    virtual ~IRebootable() = default;
     virtual void reboot() = 0;
 };
 

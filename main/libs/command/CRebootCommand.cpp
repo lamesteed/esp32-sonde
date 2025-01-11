@@ -2,28 +2,25 @@
 #include "IDataPublisherService.h"
 #include "IRebootable.h"
 
-CRebootCommand::CRebootCommand( IDataPublisherService & publisher, IRebootable & rebootable )
-    : mPublisher( publisher )
-    , mRebootable( rebootable )
-{
-
-}
-
-CRebootCommand::~CRebootCommand()
+CRebootCommand::CRebootCommand(
+    const IDataPublisherService::Ptr & publisher,
+    const IRebootable::Ptr & rebootable )
+        : mPublisher( publisher )
+        , mRebootable( rebootable )
 {
 
 }
 
 std::string CRebootCommand::getDescription() const
 {
-    return "REBOOT: Reboot the device";
+    return "REBOOT: Reboots Sonde";
 }
 
 bool CRebootCommand::execute()
 {
-    mRebootable.reboot();
+    mRebootable->reboot();
 
-    mPublisher.publishData( "Rebooting Sonde", true );
+    mPublisher->publishData( "Rebooting Sonde", true );
 
     return true;
 }

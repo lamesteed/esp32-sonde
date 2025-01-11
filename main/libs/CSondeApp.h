@@ -11,10 +11,11 @@ public:
     void run();
 
 private:
-    static const char * TAG;
-
     // IRebootable interface
     virtual void reboot() override;
+
+private:
+    static const char * TAG;
 
     bool mRebootPending;
 };

@@ -117,9 +117,9 @@ std::string writeSampleDataInTestingMode (SampleData data, int counter) {
     Serial.println("attributes: ");
 }
 
-ProbeSampler::ProbeSampler( const int samples )
-    : mSampleCounter( samples ) {
-    ESP_LOGI( TAG, "Instance created (samples = %d)", samples );
+ProbeSampler::ProbeSampler()
+{
+    ESP_LOGI( TAG, "Instance created" );
 }
 
 ProbeSampler::~ProbeSampler(){ESP_LOGI( TAG, "Instance destroyed" );}

@@ -5,11 +5,8 @@
 #include "BLEServer.h"
 #include "BLECharacteristic.h"
 
-#include <memory>
-
 class BLEDescriptor;
 class BLE2902;
-class ICommandListener;
 
 class CBluetoothPublisherService : public IDataPublisherService
                                  , public BLEServerCallbacks
@@ -19,12 +16,12 @@ public:
     CBluetoothPublisherService();
     virtual ~CBluetoothPublisherService();
 
-    void setNotificationListener( ICommandListener * pListener );
 private:
     // IDataPublisherService interface
     virtual bool start() override;
     virtual bool stop() override;
     virtual bool publishData( const std::string & data, bool sendEOD ) override;
+    virtual void setNotificationListener( ICommandListener * listener );
 
     // BLEServerCallbacks interface
     virtual void onConnect( BLEServer * pServer ) override;
@@ -44,7 +41,7 @@ private:
     static const char * CHAR_NOTIFY_UUID;   ///< UUID for notification characteristic (used to send data to client)
     static const char * CHAR_RX_CMD_UUID;   ///< UUID for Read/Write characteristic (client uses it to initiate data transfer)
 
-    ICommandListener  * mNotificationListener;  ///< Listener for commands from BT client
+    ICommandListener * mNotificationListener;  ///< Listener for commands from BT client
 
     BLEServer         * mServer;                ///< BLE server instance
     BLECharacteristic * mNotifyCharacteristic;  ///< Notify characteristic to send data to client
