@@ -1,6 +1,8 @@
 #include "CSondeApp.h"
-#include "publisher/CBluetoothPublisherService.h"
-#include "command/CCommandProcessor.h"
+#include "CBluetoothPublisherService.h"
+#include "ProbeSampler.h"
+#include "CStorageService.h"
+#include "CCommandProcessor.h"
 
 #include "esp_log.h"
 
@@ -23,19 +25,31 @@ void CSondeApp::run()
     ESP_LOGI( TAG, "Running ..." );
 
     //Create BT Service
-    CBluetoothPublisherService publisher;
-    IDataPublisherService & rPublisher = publisher;
-    IRebootable & rRebootable = *this;
+    IDataPublisherService::Ptr publisher = std::make_shared<CBluetoothPublisherService>();
+
+    //Create storage service and start it
+    IStorageService::Ptr storage = std::make_shared<CStorageService>();
+    bool storageStarted = storage->start();
+    if ( !storageStarted )
+    {
+        ESP_LOGW( TAG, "Failed to start storage service, persisting data will not be possible" );
+    }
+
+    // Create sampler instance
+    ISampler::Ptr sampler = std::make_shared<ProbeSampler>();
+
+    // Safely create shared pointer to this object
+    IRebootable::Ptr rebootable = shared_from_this();
+
 
     // Create command processor
-    CCommandProcessor processor( rPublisher, rRebootable );
-    ICommandListener * pCmdListener = &processor;
+    CCommandProcessor processor( sampler, publisher, rebootable, storage );
 
     // Specify listener for incoming Bluetooth commands
-    publisher.setNotificationListener( pCmdListener );
+    publisher->setNotificationListener( &processor );
 
     // Start BT Service to wait for client commands
-    rPublisher.start();
+    publisher->start();
 
     // Enter command processing loop
     while( true )
@@ -47,4 +61,12 @@ void CSondeApp::run()
             break;
         }
     }
+
+    // Stop BT Service
+    publisher->stop();
+
+    // Stop storage service
+    storage->stop();
+
+    ESP_LOGI( TAG, "Stopped" );
 }

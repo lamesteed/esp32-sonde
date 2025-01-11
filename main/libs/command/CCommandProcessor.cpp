@@ -3,20 +3,26 @@
 #include "IRebootable.h"
 #include "CTestModeCommand.h"
 #include "CRebootCommand.h"
+#include "CListFilesCommand.h"
+#include "CGetFileCommand.h"
 #include "esp_log.h"
 
 // constants definition
 const char * CCommandProcessor::TAG = "CCommandProcessor";
 const char * CCommandProcessor::CMD_TESTMODE = "TESTMODE";
 const char * CCommandProcessor::CMD_REBOOT = "REBOOT";
+const char * CCommandProcessor::CMD_LISTFILES = "LISTFILES";
+const char * CCommandProcessor::CMD_GETFILE = "GETFILE";
 
 CCommandProcessor::CCommandProcessor(
     const ISampler::Ptr & sampler,
     const IDataPublisherService::Ptr & publisher,
-    const IRebootable::Ptr & rebootable )
+    const IRebootable::Ptr & rebootable,
+    const IStorageService::Ptr & storageService )
         : mSampler( sampler )
         , mPublisher( publisher )
         , mRebootable( rebootable )
+        , mStorageService( storageService )
         , mCommandQueue()
         , mQueueMutex()
         , mCondvar()
@@ -44,7 +50,19 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     {
         // create and execute reboot command
         cmd = std::make_shared<CRebootCommand>( mPublisher, mRebootable );
-    } else
+    } else if ( !command.compare( CMD_LISTFILES ) )
+    {
+        // create and execute list files command
+        cmd = std::make_shared<CListFilesCommand>( mStorageService, mPublisher );
+    } else if ( !command.compare( CMD_GETFILE ) )
+    {
+        //expect arguments for this command
+        ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
+
+        // create and execute get file command
+        cmd = std::make_shared<CGetFileCommand>( mStorageService, mPublisher, cmdArgs );
+    }
+    else
     {
         ESP_LOGE( TAG, "onCommandReceived() - unknown command: %s", command.c_str() );
     }
@@ -77,4 +95,31 @@ void CCommandProcessor::processCommands()
 
     // Log the result
     ESP_LOGI( TAG, "Command executed, result: %s", result ? "success" : "failure" );
+}
+
+ICommand::CommandArgs CCommandProcessor::parseArgs( const std::string & args )
+{
+    // Parsing args string argument of "k1=v1,k2=v2,..."" format into ICommand::CommandArgs map
+    ICommand::CommandArgs cmdArgs;
+    size_t pos = 0;
+    while ( pos < args.size() )
+    {
+        size_t eqPos = args.find( '=', pos );
+        if ( eqPos == std::string::npos )
+        {
+            ESP_LOGE( TAG, "parseArgs() - invalid args format: %s", args.c_str() );
+            return cmdArgs;
+        }
+
+        std::string key = args.substr( pos, eqPos - pos );
+        pos = eqPos + 1;
+
+        size_t commaPos = args.find( ',', pos );
+        std::string value = ( commaPos == std::string::npos ) ? args.substr( pos ) : args.substr( pos, commaPos - pos );
+        pos = ( commaPos == std::string::npos ) ? args.size() : commaPos + 1;
+
+        cmdArgs[key] = value;
+    }
+
+    return cmdArgs;
 }
