@@ -26,7 +26,7 @@ extern "C" void app_main(void)
     CSondeApp().run();
 
     // Restart the device
-    for (int i = 10; i >= 0; i--) {
+    for (int i = 5; i >= 0; i--) {
         ESP_LOGW(TAG, "Restarting in %d seconds...", i);
         delayMsec(1000);
     }

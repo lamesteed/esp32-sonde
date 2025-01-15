@@ -5,6 +5,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+#include <iomanip>
+#include <sstream>
+
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
@@ -30,9 +33,9 @@ DallasTemperature tempSensor(&oneWire);
 const char * ProbeSampler::TAG = "ProbeSampler";
 
 std::string twoDecimalString(float value) {
-  int whole = (int)value;                       // Extract the whole part
-  int decimal = (int)((value - whole) * 100);   // Extract the decimal part
-  return std::to_string(whole) + "." + (decimal < 10 ? "0" : "") + std::to_string(decimal);
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << value;
+    return oss.str();
 }
 
 float getTemperatureInCelsius (DallasTemperature t) {
@@ -80,25 +83,37 @@ SampleData readAllSensors() {
 }
 
 SampleData averageSensorReadings(int numSamples) {
-    SampleData accumulatedData = {0, 0, 0, 0, 0, 0};
+    SampleData accumulatedData = {-127, 0, 0, 0, 0, 0};
+
+    float temp[10];
 
     for (int i = 0; i < numSamples; ++i) {
         SampleData data = readAllSensors();
-        accumulatedData.temperature += data.temperature;
+        temp[i] = data.temperature;
+        // for temperature reading save the highest value
+        if (data.temperature > accumulatedData.temperature ) {
+            accumulatedData.temperature = data.temperature;
+        }
         accumulatedData.pressure += data.pressure;
         accumulatedData.pressure_voltage += data.pressure_voltage;
         accumulatedData.tds += data.tds;
         accumulatedData.tds_voltage += data.tds_voltage;
         accumulatedData.conductivity += data.conductivity;
-        delayMsec( 10 );                               // delay 10ms between each sample
+        delayMsec( 100 );                               // delay 10ms between each sample
     }
 
-    accumulatedData.temperature /= numSamples;
     accumulatedData.pressure /= numSamples;
     accumulatedData.pressure_voltage /= numSamples;
     accumulatedData.tds /= numSamples;
     accumulatedData.tds_voltage /= numSamples;
     accumulatedData.conductivity /= numSamples;
+
+    // print out the temperature values to string stream
+    std::ostringstream oss;
+    for (int i = 0; i < numSamples; ++i) {
+        oss << temp[i] << ", ";
+    }
+    ESP_LOGI( "averageSensorReadings", "Temperature values: %s", oss.str().c_str() );
 
     return accumulatedData;
 }
@@ -106,6 +121,7 @@ SampleData averageSensorReadings(int numSamples) {
 std::string writeSampleDataInTestingMode (SampleData data, int counter) {
 
     // writing sample data into string to be sent out via bluetooth
+    ESP_LOGI( "writeSampleDataInTestingMode", "Tfloat = %.2f, Tstr = %s", data.temperature, twoDecimalString(data.temperature).c_str()) ;
     return "Temperature: " +
     twoDecimalString(data.temperature) + "°C\nPressure: " +
     std::to_string(data.pressure) +  "psi, " +
