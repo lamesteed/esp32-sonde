@@ -197,7 +197,7 @@ bool CBluetoothPublisherService::stop()
     }
 
     // deinit BLE
-    BLEDevice::deinit( true );
+    BLEDevice::deinit( false );
     mServer = nullptr;
     mNotifyCharacteristic = nullptr;
     mRxCmdCharacteristic = nullptr;
