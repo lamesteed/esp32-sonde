@@ -1,5 +1,6 @@
 #include "CStorageService.h"
 
+#define DEBUG_ESP_SD
 #include "SD_MMC.h"
 #include "esp_log.h"
 
@@ -38,12 +39,48 @@ bool CStorageService::start()
         return false;
     }
 
+    // Check if SD card present and if yes - print card type
+    std::string cardTypeStr;
+    switch( SD_MMC.cardType() )
+    {
+        case CARD_NONE:
+            ESP_LOGE( TAG, "start() - No SD card found" );
+            return false;
+        case CARD_SD:
+            cardTypeStr = "SD";
+            break;
+        case CARD_MMC:
+            cardTypeStr = "MMC";
+            break;
+        case CARD_SDHC:
+            cardTypeStr = "SDHC";
+            break;
+        case CARD_UNKNOWN:
+        default:
+            cardTypeStr = "Unknown";
+            break;
+    }
+
+    // Get SD card size and print card info
+    uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
+    uint64_t totalBytes = SD_MMC.totalBytes() / (1024 * 1024);
+    uint64_t usedBytes = SD_MMC.usedBytes() / (1024 * 1024);
+
+    ESP_LOGI( TAG,
+              "Card type: %s, size: %lluMB, Total space: %lluMB, Used space: %lluMB",
+              cardTypeStr.c_str(),
+              cardSize,
+              totalBytes,
+              usedBytes );
+
     // check if sentry226 directory exists, if not create it
     if ( !SD_MMC.exists( SENTRY226_DIR ) )
     {
+        ESP_LOGI( TAG, "start() - %s directory not found, creating", SENTRY226_DIR );
+
         if ( !SD_MMC.mkdir( SENTRY226_DIR ) )
         {
-            ESP_LOGE( TAG, "start() - failed to create /sentry226 directory" );
+            ESP_LOGE( TAG, "start() - failed to create %s directory", SENTRY226_DIR );
             return false;
         }
     }
@@ -78,7 +115,7 @@ bool CStorageService::getStatus()
 
 bool CStorageService::listFiles( FileList & outFiles )
 {
-    ESP_LOGI( TAG, "listFiles() - listing files in /sentry226 directory" );
+    ESP_LOGI( TAG, "listFiles() - listing files in %s directory", SENTRY226_DIR );
 
     if ( !mInitialized )
     {
@@ -90,7 +127,7 @@ bool CStorageService::listFiles( FileList & outFiles )
     File root = SD_MMC.open( SENTRY226_DIR );
     if ( !root )
     {
-        ESP_LOGE( TAG, "listFiles() - failed to open /sentry226 directory" );
+        ESP_LOGE( TAG, "listFiles() - failed to open %s directory", SENTRY226_DIR );
         return false;
     }
 

@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <inttypes.h>
 #include "sdkconfig.h"
 
 #include "delay.h"
@@ -14,6 +12,9 @@
 #include "ProbeSampler.h"
 #include "CSondeApp.h"
 
+#include <stdio.h>
+#include <memory>
+
 // Tag for logging
 static const char * TAG = "sonde_main";
 
@@ -23,7 +24,8 @@ extern "C" void app_main(void)
     initArduino();
 
     //Create application and run it
-    CSondeApp().run();
+    std::shared_ptr<CSondeApp> app = std::make_shared<CSondeApp>();
+    app->run();
 
     // Restart the device
     for (int i = 5; i >= 0; i--) {
