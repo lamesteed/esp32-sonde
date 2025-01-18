@@ -1,4 +1,5 @@
 #include "CSondeApp.h"
+#include "CSystemTimeService.h"
 #include "CBluetoothPublisherService.h"
 #include "ProbeSampler.h"
 #include "CStorageService.h"
@@ -24,7 +25,10 @@ void CSondeApp::run()
 {
     ESP_LOGI( TAG, "Running ..." );
 
-    //Create BT Service
+    // Create Time Service
+    ITimeService::Ptr systime = std::make_shared<CSystemTimeService>();
+
+    // Create BT Service
     IDataPublisherService::Ptr publisher = std::make_shared<CBluetoothPublisherService>();
 
     //Create storage service and start it
@@ -43,7 +47,7 @@ void CSondeApp::run()
 
 
     // Create command processor
-    CCommandProcessor processor( sampler, publisher, rebootable, storage );
+    CCommandProcessor processor( sampler, publisher, rebootable, storage, systime );
 
     // Specify listener for incoming Bluetooth commands
     publisher->setNotificationListener( &processor );

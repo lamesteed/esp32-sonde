@@ -5,6 +5,7 @@
 #include "CRebootCommand.h"
 #include "CListFilesCommand.h"
 #include "CGetFileCommand.h"
+#include "CSetTimeCommand.h"
 #include "esp_log.h"
 
 // constants definition
@@ -13,16 +14,19 @@ const char * CCommandProcessor::CMD_TESTMODE = "TESTMODE";
 const char * CCommandProcessor::CMD_REBOOT = "REBOOT";
 const char * CCommandProcessor::CMD_LISTFILES = "LISTFILES";
 const char * CCommandProcessor::CMD_GETFILE = "GETFILE";
+const char * CCommandProcessor::CMD_SETTIME = "SETTIME";
 
 CCommandProcessor::CCommandProcessor(
     const ISampler::Ptr & sampler,
     const IDataPublisherService::Ptr & publisher,
     const IRebootable::Ptr & rebootable,
-    const IStorageService::Ptr & storageService )
+    const IStorageService::Ptr & storageService,
+    const ITimeService::Ptr & timeService )
         : mSampler( sampler )
         , mPublisher( publisher )
         , mRebootable( rebootable )
         , mStorageService( storageService )
+        , mTimeService( timeService )
         , mCommandQueue()
         , mQueueMutex()
         , mCondvar()
@@ -58,9 +62,14 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     {
         //expect arguments for this command
         ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
-
         // create and execute get file command
         cmd = std::make_shared<CGetFileCommand>( mStorageService, mPublisher, cmdArgs );
+    } else if ( !command.compare( CMD_SETTIME ) )
+    {
+        //expect arguments for this command
+        ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
+        // create and execute set time command
+        cmd = std::make_shared<CSetTimeCommand>( mPublisher, mTimeService, cmdArgs );
     }
     else
     {
