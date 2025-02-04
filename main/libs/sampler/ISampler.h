@@ -1,15 +1,16 @@
 #ifndef ISAMPLER_H
 #define ISAMPLER_H
 
+#include <memory>
 #include <string>
 
 class ISampler
 {
 public:
+    using Ptr = std::shared_ptr<ISampler>;
+
     /// @brief Virtual destructor
-    virtual ~ISampler()
-    {
-    }
+    virtual ~ISampler() = default;
 
     /// @brief Initialize sampler
     virtual bool init() = 0;

@@ -8,8 +8,7 @@ class ProbeSampler : public ISampler
 {
 public:
     /// @brief Constructor
-    /// @param samples Number of samples to be generated
-    ProbeSampler ( const int samples );
+    ProbeSampler();
 
     /// @brief Virtual destructor
     virtual ~ProbeSampler();
@@ -28,7 +27,6 @@ private:
     virtual  std::string getSample() override;
 
 private:
-    const int mSampleCounter;
     static const char * TAG;
 
 };

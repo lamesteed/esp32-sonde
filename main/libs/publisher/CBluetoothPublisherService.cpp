@@ -15,24 +15,30 @@ const char * CBluetoothPublisherService::BLE_DEVICE_NAME   = "ESP32-Sonde";
 const char * CBluetoothPublisherService::SERVICE_UUID      = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const char * CBluetoothPublisherService::CHAR_NOTIFY_UUID  = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const char * CBluetoothPublisherService::CHAR_RX_CMD_UUID  = "e3223119-9445-4e96-a4a1-85358c4046a2";
+const char * CBluetoothPublisherService::CHAR_RX_ARGS_UUID = "8e0a2686-d5bc-11ef-9cd2-0242ac120002";
 
 CBluetoothPublisherService::CBluetoothPublisherService()
     : mNotificationListener( nullptr )
     , mServer( nullptr )
     , mNotifyCharacteristic( nullptr )
     , mRxCmdCharacteristic( nullptr )
+    , mRxCmdArgsCharacteristic( nullptr )
     , mNotifyDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
     , mNotifyDescriptor2902( new BLE2902() )
     , mRxDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
     , mRxDescriptor2902( new BLE2902() )
+    , mRxArgsDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
+    , mRxArgsDescriptor2902( new BLE2902() )
     , mDeviceConnected( false )
     , mCurrentCommand()
+    , mCurrentCommandArgs()
 {
     ESP_LOGI( TAG, "Instance created" );
     // configure descriptors
-    mNotifyDescriptor2901->setValue( "Subscribe to get sonde data" );
+    mNotifyDescriptor2901->setValue( "Subscribe to get sonde command output" );
     mNotifyDescriptor2902->setNotifications( true );
-    mRxDescriptor2901->setValue( "Write to initiate sonde data transfer" );
+    mRxDescriptor2901->setValue( "Write to initiate sonde command execution" );
+    mRxArgsDescriptor2901->setValue( "Write to specify sonde command arguments" );
 }
 
 CBluetoothPublisherService::~CBluetoothPublisherService()
@@ -68,17 +74,33 @@ void CBluetoothPublisherService::onWrite(BLECharacteristic *pChar)
 {
     ESP_LOGI( TAG, "onWrite() - data received, characteristic = %s", pChar->getUUID().toString().c_str() );
 
-    mCurrentCommand.assign( pChar->getValue().c_str() );
-    ESP_LOGI( TAG, "onWrite() - data received: %s", mCurrentCommand.c_str() );
-
-    // Notify listener about new command
-    if ( mNotificationListener )
+    // if received argument chunk - append it to arguments string
+    if ( pChar->getUUID().toString().equals( CHAR_RX_ARGS_UUID ) )
     {
-        mNotificationListener->onCommandReceived( mCurrentCommand, std::string() );
+        mCurrentCommandArgs.append( pChar->getValue().c_str() );
+        ESP_LOGI( TAG, "onWrite() - Received argument chunk: %s", mCurrentCommandArgs.c_str() );
+        return;
     }
-    else
+
+    // if received command - assign to command string
+    // then notify listener with current command and arguments and clear arguments to prepare for next command
+    if ( pChar->getUUID().toString().equals( CHAR_RX_CMD_UUID ) )
     {
-        ESP_LOGE( TAG, "onWrite() - no listener to notify" );
+        mCurrentCommand.assign( pChar->getValue().c_str() );
+        ESP_LOGI( TAG, "onWrite() - Received command: %s", mCurrentCommand.c_str() );
+
+        // Notify listener about new command
+        if ( mNotificationListener )
+        {
+            mNotificationListener->onCommandReceived( mCurrentCommand, mCurrentCommandArgs );
+        }
+        else
+        {
+            ESP_LOGE( TAG, "onWrite() - no listener to notify" );
+        }
+
+        mCurrentCommandArgs.clear();
+        return;
     }
 }
 // BLECharacteristicCallbacks interface implementation end
@@ -111,7 +133,7 @@ bool CBluetoothPublisherService::start()
         return false;
     }
 
-    // Create Notify characteristic (is used to send data to client)
+    // Create Notify characteristic (is used to send command output to client)
     // Add 2901 and 2902 descriptors
     mNotifyCharacteristic =
         pService->createCharacteristic( CHAR_NOTIFY_UUID,
@@ -121,25 +143,38 @@ bool CBluetoothPublisherService::start()
         ESP_LOGE( TAG, "BLE Notification characteristic creation failed" );
         return false;
     }
+    mNotifyCharacteristic->addDescriptor( mNotifyDescriptor2901.get() );
+    mNotifyCharacteristic->addDescriptor( mNotifyDescriptor2902.get() );
 
-    // Create Read/Write characteristic (client uses it to specify command)
+    // Create Read/Write characteristic (client uses it to specify command and trigger execution)
     // Add 2901 and 2902 descriptors
-    // Also add callback to trigger data transfer
+    // Also add callback to listen for incoming command from client
     mRxCmdCharacteristic =
         pService->createCharacteristic( CHAR_RX_CMD_UUID,
                                         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE );
     if ( !mRxCmdCharacteristic )
     {
-        ESP_LOGE( TAG, "BLE Read/Write characteristic creation failed" );
+        ESP_LOGE( TAG, "BLE Read/Write command characteristic creation failed" );
         return false;
     }
-
-    mNotifyCharacteristic->addDescriptor( mNotifyDescriptor2901.get() );
-    mNotifyCharacteristic->addDescriptor( mNotifyDescriptor2902.get() );
-
     mRxCmdCharacteristic->addDescriptor( mRxDescriptor2901.get() );
     mRxCmdCharacteristic->addDescriptor( mRxDescriptor2902.get() );
     mRxCmdCharacteristic->setCallbacks( this );
+
+    // Create Read/Write characteristic (client uses it to specify command arguments)
+    // Add 2901 and 2902 descriptors
+    // Also add callback to listen for incoming command arguments from client
+    mRxCmdArgsCharacteristic =
+        pService->createCharacteristic( CHAR_RX_ARGS_UUID,
+                                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE );
+    if ( !mRxCmdArgsCharacteristic )
+    {
+        ESP_LOGE( TAG, "BLE Read/Write command arguments characteristic creation failed" );
+        return false;
+    }
+    mRxCmdArgsCharacteristic->addDescriptor( mRxArgsDescriptor2901.get() );
+    mRxCmdArgsCharacteristic->addDescriptor( mRxArgsDescriptor2902.get() );
+    mRxCmdArgsCharacteristic->setCallbacks( this );
 
     // Start the BLE service
     pService->start();
@@ -197,10 +232,11 @@ bool CBluetoothPublisherService::stop()
     }
 
     // deinit BLE
-    BLEDevice::deinit( true );
+    BLEDevice::deinit( false );
     mServer = nullptr;
     mNotifyCharacteristic = nullptr;
     mRxCmdCharacteristic = nullptr;
+    mRxCmdArgsCharacteristic = nullptr;
 
     ESP_LOGI( TAG, "BLE stopped" );
     return true;
