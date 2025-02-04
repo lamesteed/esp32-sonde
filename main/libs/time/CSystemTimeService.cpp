@@ -28,11 +28,11 @@ std::string CSystemTimeService::GetTimeAsString()
     return std::string( tmbuf );
 }
 
-bool CSystemTimeService::SetTime( long uniixTimestamp )
+bool CSystemTimeService::SetTime( long long msec )
 {
     struct timeval tv;
-    tv.tv_sec = uniixTimestamp;
-    tv.tv_usec = 0;
+    tv.tv_sec  = msec / 1000;            // Convert milliseconds to seconds
+    tv.tv_usec = ( msec % 1000 ) * 1000; // Convert remainder to microseconds
     if ( settimeofday( &tv, NULL ) < 0 )
     {
         ESP_LOGE( TAG, "SetTime() - failed to set system time. Reason: %s", strerror( errno ) );

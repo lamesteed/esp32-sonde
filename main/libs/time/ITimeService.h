@@ -17,9 +17,9 @@ public:
     virtual std::string GetTimeAsString() = 0;
 
     /// @brief Set system time
-    /// @param uniixTimestamp unix timestamp to set
+    /// @param msec unix timestamp in milliseconds to set
     /// @return true if time set successfully, false otherwise
-    virtual bool SetTime( long uniixTimestamp ) = 0;
+    virtual bool SetTime( long long msec ) = 0;
 };
 
 

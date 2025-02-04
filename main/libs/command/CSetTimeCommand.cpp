@@ -40,7 +40,7 @@ bool CSetTimeCommand::execute()
 
     // convert timestamp to long
     char *endPtr = nullptr;
-    long timestamp = strtol( it->second.c_str(), &endPtr, 10 );
+    long long timestamp = strtoll( it->second.c_str(), &endPtr, 10 );
     if ( *endPtr != '\0' )
     {
         mPublisher->publishData( "Invalid timestamp format", true );

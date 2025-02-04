@@ -20,9 +20,9 @@ private:
     std::string GetTimeAsString() override;
 
     /// @brief Set system time
-    /// @param uniixTimestamp unix timestamp to set
+    /// @param msec unix timestamp in milliseconds to set
     /// @return true if time set successfully, false otherwise
-    bool SetTime( long uniixTimestamp ) override;
+    bool SetTime( long long msec ) override;
 
 private:
     static const char * TAG;    ///< Logger tag
