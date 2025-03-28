@@ -3,6 +3,7 @@
 #include "CBluetoothPublisherService.h"
 #include "ProbeSampler.h"
 #include "CStorageService.h"
+#include "CMemoryStorageService.h"
 #include "CCommandProcessor.h"
 
 #include "esp_log.h"
@@ -31,8 +32,9 @@ void CSondeApp::run()
     // Create BT Service
     IDataPublisherService::Ptr publisher = std::make_shared<CBluetoothPublisherService>();
 
-    //Create storage service and start it
-    IStorageService::Ptr storage = std::make_shared<CStorageService>();
+    //Create storage service with memory decorator on top and start it
+    IStorageService::Ptr storage =
+        std::make_shared<CMemoryStorageService>( std::make_shared<CStorageService>() );
     bool storageStarted = storage->start();
     if ( !storageStarted )
     {

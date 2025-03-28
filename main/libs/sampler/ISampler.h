@@ -3,20 +3,30 @@
 
 #include <memory>
 #include <string>
+#include <map>
 
 class ISampler
 {
 public:
     using Ptr = std::shared_ptr<ISampler>;
 
+    // Calibration configuration key-value pairs
+    // Key is parameter name, value is parameter value in string format
+    using CalibrationConfig = std::map<std::string, std::string>;
+
+    // Expected list of calibratition parameter names and their default values in string format
+    // To be used by CalibrationConfigHelper.
+    // Default values are used if parameter is not present in the CalibrationConfig
+    using CalibrationParams = std::map<std::string, std::string>;
+
     /// @brief Virtual destructor
     virtual ~ISampler() = default;
 
     /// @brief Initialize sampler
-    virtual bool init() = 0;
+    virtual bool init( const CalibrationConfig & config ) = 0;
 
     /// @brief  Retrieve next sample from sensors
-    /// @return Sample data serialized to satring,
+    /// @return Sample data serialized to string,
     ///         empty string if no more samples available in current cycle (surface reached)
     virtual  std::string getSample() = 0;
 };

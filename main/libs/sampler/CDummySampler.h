@@ -18,7 +18,7 @@ private:
     /// @brief Initialize sampler, must be called before first call to getSample()
     ///        After this call sampler considered ready to provide samples
     /// @return true if initialization successful, false otherwise
-    virtual bool init() override;
+    virtual bool init( const CalibrationConfig & config ) override;
 
     /// @brief  Retrieve next sample from sensors
     /// @return Sample data serialized to satring,

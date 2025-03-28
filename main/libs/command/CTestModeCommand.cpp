@@ -4,12 +4,17 @@
 #include "IDataPublisherService.h"
 
 #include <memory>
+#include <sstream>
+#include <algorithm>
 
 CTestModeCommand::CTestModeCommand(
     const ISampler::Ptr & sampler,
-    const IDataPublisherService::Ptr & publisher, int samplesCount )
+    const IDataPublisherService::Ptr & publisher,
+    const IStorageService::Ptr & storage,
+    int samplesCount )
         : mSampler( sampler )
         , mPublisher( publisher )
+        , mStorageService( storage )
         , mSamplesCount( samplesCount )
 {
 
@@ -23,8 +28,34 @@ std::string CTestModeCommand::getDescription() const
 
 bool CTestModeCommand::execute()
 {
+    // retrieve configuration parameters from storage
+    std::string configData;
+    if ( !mStorageService->readData( "sampler.cfg", configData ) )
+    {
+        mPublisher->publishData( "Failed to read configuration data", true );
+        return false;
+    }
+    ISampler::CalibrationConfig config;
+
+    // parse configuration parameters stored in key=value format, drop any spaces in key or value
+    std::istringstream iss( configData );
+    std::string line;
+    while ( std::getline( iss, line )
+            && line.find( '=' ) != std::string::npos )
+    {
+        // split line into key and value
+        std::string key = line.substr( 0, line.find( '=' ) );
+        std::string value = line.substr( line.find( '=' ) + 1 );
+        // remove spaces from key and value
+        key.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
+        value.erase( std::remove_if( key.begin(), key.end(), ::isspace ), key.end() );
+
+        // add key and value to configuration
+        config[key] = value;
+    }
+
     // initialize sampler
-    if ( !mSampler->init() )
+    if ( !mSampler->init( config ) )
     {
         mPublisher->publishData( "Sampler initialization failed", true );
         return false;

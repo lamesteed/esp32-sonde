@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS "sonde_main.cpp"
     SRCS "libs/CSondeApp.cpp"
+    SRCS "libs/sampler/CCalibrationConfigHelper.cpp"
     SRCS "libs/sampler/ProbeSampler.cpp"
     SRCS "libs/sampler/CDummySampler.cpp"
     SRCS "libs/publisher/CBluetoothPublisherService.cpp"
@@ -9,8 +10,10 @@ idf_component_register(
     SRCS "libs/command/CRebootCommand.cpp"
     SRCS "libs/command/CListFilesCommand.cpp"
     SRCS "libs/command/CGetFileCommand.cpp"
+    SRCS "libs/command/CStoreFileCommand.cpp"
     SRCS "libs/command/CSetTimeCommand.cpp"
     SRCS "libs/storage/CStorageService.cpp"
+    SRCS "libs/storage/CMemoryStorageService.cpp"
     SRCS "libs/time/CSystemTimeService.cpp"
     INCLUDE_DIRS ""
     INCLUDE_DIRS "libs"

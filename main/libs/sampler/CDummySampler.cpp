@@ -10,7 +10,7 @@ CDummySampler::~CDummySampler()
 
 }
 
-bool CDummySampler::init()
+bool CDummySampler::init( const CalibrationConfig & config )
 {
     return true;
 

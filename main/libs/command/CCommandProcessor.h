@@ -49,6 +49,7 @@ private:
     static const char * CMD_REBOOT;         ///< Command name for reboot
     static const char * CMD_LISTFILES;      ///< Command name for list files
     static const char * CMD_GETFILE;        ///< Command name for get file
+    static const char * CMD_STOREFILE;      ///< Command name for store file
     static const char * CMD_SETTIME;        ///< Command name for set time
 
     /// @brief Static helper to parse string arguments into key-value map

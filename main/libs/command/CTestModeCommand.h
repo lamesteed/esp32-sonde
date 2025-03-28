@@ -4,6 +4,7 @@
 #include "ICommand.h"
 #include "ISampler.h"
 #include "IDataPublisherService.h"
+#include "IStorageService.h"
 
 /// @brief Command to perform sonde basic sensors testing
 class CTestModeCommand : public ICommand
@@ -12,10 +13,13 @@ public:
     /// @brief Constructor
     /// @param sampler      Sampler instance (to read sensor data)
     /// @param publisher    Data publisher instance (to report execution result)
+    /// @param storage      Storage service instance (to store data)
     /// @param samplesCount Number of samples to collect
     CTestModeCommand(
         const ISampler::Ptr & sampler,
-        const IDataPublisherService::Ptr & publisher, int samplesCount );
+        const IDataPublisherService::Ptr & publisher,
+        const IStorageService::Ptr & storage,
+        int samplesCount );
 
     /// @brief Virtual destructor
     virtual ~CTestModeCommand() = default;
@@ -33,6 +37,7 @@ private:
 private:
     ISampler::Ptr mSampler;                 ///< Sampler instance
     IDataPublisherService::Ptr mPublisher;  ///< Data publisher interface
+    IStorageService::Ptr mStorageService;   ///< Storage service interface
     int mSamplesCount;                      ///< Number of samples to collect
 };
 

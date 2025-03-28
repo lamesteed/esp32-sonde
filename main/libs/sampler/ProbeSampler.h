@@ -3,6 +3,10 @@
 #define PROBESAMPLER_H
 
 #include "ISampler.h"
+#include "CCalibrationConfigHelper.h"
+
+class OneWire;
+class DallasTemperature;
 
 class ProbeSampler : public ISampler
 {
@@ -19,7 +23,7 @@ private:
     /// @brief Initialize sampler, must be called before first call to getSample()
     ///        After this call sampler considered ready to provide samples
     /// @return true if initialization successful, false otherwise
-    virtual bool init() override;
+    virtual bool init( const CalibrationConfig & config ) override;
 
     /// @brief  Retrieve next sample from sensors
     /// @return Sample data serialized to satring,
@@ -27,8 +31,39 @@ private:
     virtual  std::string getSample() override;
 
 private:
+    struct SampleData {
+        float temperature;
+        float pressure_voltage;
+        float pressure;
+        float tds_voltage;
+        float tds;
+        float conductivity;
+    };
+
+    float getTemperatureInCelsius();
+    float getAnalogInputVoltage (int inputPin);
+    float getTDS (float tds_input_voltage, float temperature);
+    float getConductivity (float tds_input_voltage, float temperature);
+    float getPressure (float pressure_input_voltage);
+    SampleData readAllSensors();
+    std::string twoDecimalString(float value);
+    std::string writeSampleDataInTestingMode (SampleData data, int counter);
+    SampleData averageSensorReadings(int numSamples);
+
     static const char * TAG;
 
+    // Configuration parameter names
+    static const char * CFG_NUMBER_OF_SAMPLES;
+    static const char * CFG_TDS_CONVERSION_FACTOR_A;
+    static const char * CFG_TDS_CONVERSION_FACTOR_B;
+    static const char * CFG_PRESSURE_CONVERSION_FACTOR_A;
+    static const char * CFG_PRESSURE_CONVERSION_FACTOR_B;
+
+    CalibrationParams mCalibrationParameters;           ///< Expected calibration parameters and their default values
+    CCalibrationConfigHelper::Ptr mConfigHelper;        ///< Calibration configuration helper
+
+    std::shared_ptr<OneWire> mOneWirePtr;               ///< OneWire instance
+    std::shared_ptr<DallasTemperature> mTempSensorPtr;  ///< Temperature sensor instance
 };
 
 #endif // PROBESAMPLER_H

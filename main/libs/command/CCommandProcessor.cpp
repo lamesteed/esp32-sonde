@@ -5,6 +5,7 @@
 #include "CRebootCommand.h"
 #include "CListFilesCommand.h"
 #include "CGetFileCommand.h"
+#include "CStoreFileCommand.h"
 #include "CSetTimeCommand.h"
 #include "esp_log.h"
 
@@ -14,6 +15,7 @@ const char * CCommandProcessor::CMD_TESTMODE = "TESTMODE";
 const char * CCommandProcessor::CMD_REBOOT = "REBOOT";
 const char * CCommandProcessor::CMD_LISTFILES = "LISTFILES";
 const char * CCommandProcessor::CMD_GETFILE = "GETFILE";
+const char * CCommandProcessor::CMD_STOREFILE = "STOREFILE";
 const char * CCommandProcessor::CMD_SETTIME = "SETTIME";
 
 CCommandProcessor::CCommandProcessor(
@@ -49,7 +51,7 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     {
         // create and execute test mode command
         static const int SAMPLES_COUNT = 5;
-        cmd = std::make_shared<CTestModeCommand>( mSampler, mPublisher, SAMPLES_COUNT );
+        cmd = std::make_shared<CTestModeCommand>( mSampler, mPublisher, mStorageService, SAMPLES_COUNT );
     } else if ( !command.compare( CMD_REBOOT ) )
     {
         // create and execute reboot command
@@ -64,6 +66,12 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
         ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
         // create and execute get file command
         cmd = std::make_shared<CGetFileCommand>( mStorageService, mPublisher, cmdArgs );
+    } else if ( !command.compare( CMD_STOREFILE ) )
+    {
+        //expect arguments for this command
+        ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
+        // create and execute store file command
+        cmd = std::make_shared<CStoreFileCommand>( mStorageService, mPublisher, cmdArgs );
     } else if ( !command.compare( CMD_SETTIME ) )
     {
         //expect arguments for this command
