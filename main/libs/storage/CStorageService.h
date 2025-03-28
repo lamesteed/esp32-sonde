@@ -8,13 +8,16 @@ class CStorageService : public IStorageService
 public:
     CStorageService();
     virtual ~CStorageService();
+    bool readConfigValue(const std::string &key, float &outValue);
+    virtual bool getStatus() override;
+
 
 private:
     // IStorageService interface
     virtual bool start() override;
     virtual bool stop() override;
 
-    virtual bool getStatus() override;
+    //virtual bool getStatus() override;
 
     virtual bool listFiles( FileList & outFiles ) override;
     virtual bool readData( const std::string & filename, std::string & outData ) override;

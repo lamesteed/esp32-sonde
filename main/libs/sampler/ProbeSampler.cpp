@@ -1,4 +1,5 @@
 #include "ProbeSampler.h"
+#include "CStorageService.h"
 #include "esp_log.h"
 #include "delay.h"
 #include <Arduino.h>
@@ -30,6 +31,8 @@ boolean testMode = 1;
 OneWire oneWire(TEMP_SENSOR_INPUT_PIN);
 DallasTemperature tempSensor(&oneWire);
 
+extern CStorageService storageService; // Ensure the storage service is accessible
+
 const char * ProbeSampler::TAG = "ProbeSampler";
 
 std::string twoDecimalString(float value) {
@@ -49,9 +52,31 @@ float getAnalogInputVoltage (int inputPin) {
     return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
-float getTDS (float tds_input_voltage, float temperature) {
-    float tds = 434.8 * tds_input_voltage;                      // assuming 0v = 0ppm, 2.3v = 1000ppm.
-     return (tds > 0) ? tds : 0;
+float getTDS(float tds_input_voltage, float temperature) {
+    static float tds_conversion_factor_a = 434.8; // Default value
+    static float tds_conversion_factor_b = 0; // Default value
+    static bool configLoaded = false;
+
+    // Load the TDS conversion factor from the config file once
+    if (!configLoaded) {
+        float configValue;
+        if (storageService.readConfigValue("TDS_CONVERSION_FACTOR_A", configValue)) {
+            tds_conversion_factor_a = configValue;
+            ESP_LOGI("getTDS", "Loaded TDS_CONVERSION_FACTOR: %.2f", tds_conversion_factor_a);
+        } else {
+            ESP_LOGW("getTDS", "Using default TDS_CONVERSION_FACTOR: %.2f", tds_conversion_factor_a);
+        }
+        if (storageService.readConfigValue("TDS_CONVERSION_FACTOR_B", configValue)) {
+            tds_conversion_factor_b = configValue;
+            ESP_LOGI("getTDS", "Loaded TDS_CONVERSION_FACTOR_B: %.2f", tds_conversion_factor_b);
+        } else {
+            ESP_LOGW("getTDS", "Using default TDS_CONVERSION_FACTOR_B: %.2f", tds_conversion_factor_b);
+        }
+        configLoaded = true;
+    }
+
+    float tds = tds_conversion_factor_a * tds_input_voltage + tds_conversion_factor_b; // Use the loaded value
+    return (tds > 0) ? tds : 0;
 }
 
 float getConductivity (float tds_input_voltage, float temperature) {
@@ -142,6 +167,11 @@ ProbeSampler::~ProbeSampler(){ESP_LOGI( TAG, "Instance destroyed" );}
 
 bool ProbeSampler::init() {
     ESP_LOGI( TAG, "Initializing ..." );
+    if (!storageService.getStatus()) {
+        ESP_LOGE(TAG, "Failed to initialize storage service");
+        return false;
+    }
+
     tempSensor.begin();                             // initialize temperature sensor
     delayMsec( 1000 );
     pinMode(TOGGLE_PIN, INPUT);                     // initialize toggle pin as input

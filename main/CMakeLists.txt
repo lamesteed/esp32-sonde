@@ -24,3 +24,13 @@ idf_component_register(
 set(EXTRA_COMPONENT_DIRS "${PROJECT_DIR}/components")
 
 add_compile_options(-std=c++11)
+
+# Add the main component directory
+# Removed duplicate idf_component_register call to avoid target conflict
+
+# Link libraries for this component
+target_link_libraries(${COMPONENT_LIB}
+esp_idf
+libefuse
+# Add more libraries as needed
+)
