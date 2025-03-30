@@ -78,6 +78,10 @@ bool CMemoryStorageService::readData( const std::string & filename, std::string 
 {
     if ( mBypassMemoryStorage )
     {
+        return mUnderlying->readData( filename, outData );
+    }
+    else
+    {
         std::lock_guard<std::mutex> lock( mStorageMutex );
         auto it = mStorage.find( filename );
         if ( it != mStorage.end() )
@@ -91,22 +95,18 @@ bool CMemoryStorageService::readData( const std::string & filename, std::string 
             return false;
         }
     }
-    else
-    {
-        return mUnderlying->readData( filename, outData );
-    }
 }
 
 bool CMemoryStorageService::storeData( const std::string & filename, const std::string & inData )
 {
     if ( mBypassMemoryStorage )
     {
-        std::lock_guard<std::mutex> lock( mStorageMutex );
-        mStorage[filename] = inData;
-        return true;
+        return mUnderlying->storeData( filename, inData );
     }
     else
     {
-        return mUnderlying->storeData( filename, inData );
+        std::lock_guard<std::mutex> lock( mStorageMutex );
+        mStorage[filename] = inData;
+        return true;
     }
 }
