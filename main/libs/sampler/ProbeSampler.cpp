@@ -1,4 +1,5 @@
 #include "ProbeSampler.h"
+#include "csv/DatasetFields.h"
 #include "esp_log.h"
 #include "delay.h"
 #include <Arduino.h>
@@ -165,6 +166,10 @@ std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int cou
     pressureRow.ResultValue = std::to_string(data.pressure);
     tdsRow.ResultValue = std::to_string(data.tds);
     conductivityRow.ResultValue = std::to_string(data.conductivity);
+
+    std::vector<DatasetFields> datasets = {temperatureRow, pressureRow, tdsRow, conductivityRow};
+
+    DatasetFields::saveToCSV(datasets, "output.csv");
 }
 
 ProbeSampler::~ProbeSampler()
