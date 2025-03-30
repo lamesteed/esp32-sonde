@@ -1,5 +1,33 @@
 #include "CStoreFileCommand.h"
 
+#include <mbedtls/base64.h> // Base64 encoding/decoding provided by espressif mbedtls library
+
+std::string encodeBase64(const std::string &input) {
+
+    // First call is to only figure out the size of the encoded buffer that will be needed
+    size_t encoded_len;
+    mbedtls_base64_encode(nullptr, 0, &encoded_len, reinterpret_cast<const unsigned char*>(input.data()), input.size());
+
+    // Now we can create the buffer of the right size and actually encode the data
+    std::string encoded(encoded_len, '\0'); // Allocate enough space for the encoded string
+    mbedtls_base64_encode(reinterpret_cast<unsigned char*>(&encoded[0]), encoded_len, &encoded_len,
+                          reinterpret_cast<const unsigned char*>(input.data()), input.size());
+    return encoded;
+}
+
+std::string decodeBase64( const std::string & input ) {
+
+    // First call is to only figure out the size of the decoded buffer that will be needed
+    size_t decoded_len;
+    mbedtls_base64_decode(nullptr, 0, &decoded_len, reinterpret_cast<const unsigned char*>(input.data()), input.size());
+
+    // Now we can create the buffer of the right size and actually decode the data
+    std::string decoded(decoded_len, '\0'); // Allocate space for the decoded string
+    mbedtls_base64_decode(reinterpret_cast<unsigned char*>(&decoded[0]), decoded_len, &decoded_len,
+                          reinterpret_cast<const unsigned char*>(input.data()), input.size());
+    return decoded;
+}
+
 const char * CStoreFileCommand::ARG_FILENAME = "filename";
 const char * CStoreFileCommand::ARG_DATA = "data";
 
@@ -44,7 +72,8 @@ bool CStoreFileCommand::execute()
         return false;
     }
 
-    std::string data = it->second;
+    // it is assumed that data is base64 encoded - decode it before storing
+    std::string data = decodeBase64( it->second );
 
     // store data in storage
     bool success = mStorageService->storeData( filename, data );
