@@ -26,6 +26,7 @@ private:
     // BLEServerCallbacks interface
     virtual void onConnect( BLEServer * pServer ) override;
     virtual void onDisconnect( BLEServer * pServer ) override;
+    virtual void onMtuChanged(BLEServer *pServer, esp_ble_gatts_cb_param_t *param) override;
 
     // BLECharacteristicCallbacks interface
     virtual void onWrite( BLECharacteristic * pChar ) override;
@@ -59,6 +60,8 @@ private:
     bool mDeviceConnected;                  ///< Flag indicating if device is connected
     std::string mCurrentCommand;            ///< Current command received from client
     std::string mCurrentCommandArgs;        ///< Current command arguments received from client
+
+    size_t mMaxMtu;                        ///< Maximum MTU size
 };
 
 #endif // CBLUETOOTHPUBLISHERSERVICE_H

@@ -32,6 +32,7 @@ CBluetoothPublisherService::CBluetoothPublisherService()
     , mDeviceConnected( false )
     , mCurrentCommand()
     , mCurrentCommandArgs()
+    , mMaxMtu( 23 ) // default, chunk size should be less than this by 3 bytes (ATT protocol overhead: 2 byte for attribute handle + 1 byte for opcode)
 {
     ESP_LOGI( TAG, "Instance created" );
     // configure descriptors
@@ -63,9 +64,17 @@ void CBluetoothPublisherService::onDisconnect(BLEServer* pServer)
     ESP_LOGW(TAG, "Device disconnected");
     mCurrentCommand = "";
     mDeviceConnected = false;
+    mMaxMtu = 23; // reset MTU to default value
     // Start service advertising again as advertising automatically stops when device is connected
     BLEDevice::startAdvertising();
 }
+
+void CBluetoothPublisherService::onMtuChanged(BLEServer *pServer, esp_ble_gatts_cb_param_t *param)
+{
+    ESP_LOGI(TAG, "MTU changed to %d", param->mtu.mtu);
+    mMaxMtu = param->mtu.mtu;
+}
+
 // BLEServerCallbacks interface implementation end
 
 
@@ -78,7 +87,7 @@ void CBluetoothPublisherService::onWrite(BLECharacteristic *pChar)
     if ( pChar->getUUID().toString().equals( CHAR_RX_ARGS_UUID ) )
     {
         mCurrentCommandArgs.append( pChar->getValue().c_str() );
-        ESP_LOGI( TAG, "onWrite() - Received argument chunk: %s", mCurrentCommandArgs.c_str() );
+        ESP_LOGI( TAG, "onWrite() - Received argument chunk of size %d: %s", pChar->getLength(), pChar->getValue().c_str() );
         return;
     }
 
@@ -252,15 +261,16 @@ bool CBluetoothPublisherService::publishData( const std::string & data, bool sen
     }
 
     std::string allData = data;
-    // send data in 20 bytes chunks (each chunk is a separate notification)
+    // send data in chunks (each chunk is a separate notification)
+    size_t chunkSize = mMaxMtu - 3; // 3 bytes comes from ATT protocol overhead: 2 byte for attribute handle + 1 byte for opcode
     while ( !allData.empty() )
     {
-        std::string chunk = allData.substr( 0, 20 );
-        allData.erase( 0, 20 );
+        std::string chunk = allData.substr( 0, chunkSize );
+        allData.erase( 0, chunk.size() );
         mNotifyCharacteristic->setValue( String( chunk.c_str(), chunk.size() ) );
         mNotifyCharacteristic->notify();
         ESP_LOGI( TAG, "publishData() - data sent: %s (%d bytes)", chunk.c_str(), chunk.size() );
-        delayMsec( 500 );
+        delayMsec( 50 );
     }
 
     if ( sendEOD )
