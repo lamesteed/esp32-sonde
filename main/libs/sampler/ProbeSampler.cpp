@@ -1,4 +1,5 @@
 #include "ProbeSampler.h"
+#include "csv/DatasetFields.h"
 #include "esp_log.h"
 #include "delay.h"
 #include <Arduino.h>
@@ -134,6 +135,21 @@ ProbeSampler::SampleData ProbeSampler::averageSensorReadings(int numSamples) {
 
 std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int counter) {
 
+    std::string temperatureUnit = "deg C";
+    std::string pressureUnit = "psi";
+    std::string tdsUnit = "ppm";
+    std::string conductivityUnit = "uS/cm"; 
+    std::string datasetName = "MyDatasetName";
+    std::string monitoringLocationID = "MyMonitoringLocationID";
+    std::string monitoringLocationName = "MyLake";
+    std::string monitoringLocationLatitude = "";
+    std::string monitoringLocationLongitude = "";
+
+    DatasetFields temperatureRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", temperatureUnit,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "Temperature, water", "", "", "-127", temperatureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+    DatasetFields pressureRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", pressureUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "pressure", "", "", "0", pressureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+    DatasetFields tdsRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", tdsUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "total dissolved solids", "", "", "0", tdsUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+    DatasetFields conductivityRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "conductivity", "", "", "0", conductivityUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+
     // writing sample data into string to be sent out via bluetooth
     ESP_LOGI( "writeSampleDataInTestingMode", "Tfloat = %.2f, Tstr = %s", data.temperature, twoDecimalString(data.temperature).c_str()) ;
     return "Temperature: " +
@@ -142,11 +158,19 @@ std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int cou
     twoDecimalString(data.pressure_voltage) + "v\nTDS: " +
     std::to_string(data.tds) + "ppm, " +
     std::to_string(data.tds_voltage) + "v\nConductivity: " +
-    std::to_string(data.conductivity) + "μS/cm\n" +
+    std::to_string(data.conductivity) + "uS/cm\n" +
     std::to_string( counter ) + "\n\n";
     Serial.println("attributes: ");
-}
 
+    temperatureRow.ResultValue = twoDecimalString(data.temperature);
+    pressureRow.ResultValue = std::to_string(data.pressure);
+    tdsRow.ResultValue = std::to_string(data.tds);
+    conductivityRow.ResultValue = std::to_string(data.conductivity);
+
+    std::vector<DatasetFields> datasets = {temperatureRow, pressureRow, tdsRow, conductivityRow};
+
+    DatasetFields::saveToCSV(datasets, "output.csv");
+}
 
 ProbeSampler::~ProbeSampler()
 {
