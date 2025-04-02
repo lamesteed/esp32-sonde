@@ -1,6 +1,8 @@
 #ifndef DATASETFIELDS_H
 #define DATASETFIELDS_H
 
+#include "IStorageService.h"
+
 #include <string>
 #include <vector>
 
@@ -46,7 +48,7 @@ struct DatasetFields {
     std::string LaboratorySampleID;
 
     static std::string toCSV(const DatasetFields& dataset);
-    static void saveToCSV(const std::vector<DatasetFields>& datasets, const std::string& filename);
+    static void saveToCSV( const IStorageService::Ptr & storage, const std::vector<DatasetFields>& datasets, const std::string& filename);
 };
 
 #endif // DATASETFIELDS_H

@@ -9,7 +9,6 @@
 // Arduino framework
 #include "Arduino.h"
 
-#include "ProbeSampler.h"
 #include "CSondeApp.h"
 
 #include <stdio.h>

@@ -1,6 +1,6 @@
 #include "DatasetFields.h"
-#include <fstream>
-#include <iostream>
+#include <sstream>
+#include "esp_log.h"
 
 std::string DatasetFields::toCSV(const DatasetFields& dataset) {
     return dataset.DatasetName + "," + dataset.MonitoringLocationID + "," + dataset.MonitoringLocationName + "," +
@@ -20,26 +20,33 @@ std::string DatasetFields::toCSV(const DatasetFields& dataset) {
            dataset.LaboratorySampleID + "\n";
 }
 
-void DatasetFields::saveToCSV(const std::vector<DatasetFields>& datasets, const std::string& filename) {
-    std::ofstream file(filename);
-    if (file.is_open()) {
+void DatasetFields::saveToCSV(const IStorageService::Ptr & storage, const std::vector<DatasetFields>& datasets, const std::string& filename) {
+    std::ostringstream oss;
         // Write header
-        file << "DatasetName,MonitoringLocationID,MonitoringLocationName,MonitoringLocationLatitude,MonitoringLocationLongitude,"
-             << "MonitoringLocationHorizontalCoordinateReferenceSystem,MonitoringLocationHorizontalAccuracyMeasure,"
-             << "MonitoringLocationHorizontalAccuracyUnit,MonitoringLocationType,ActivityType,ActivityMediaName,"
-             << "ActivityStartDate,ActivityStartTime,ActivityEndDate,ActivityEndTime,ActivityDepthHeightMeasure,"
-             << "ActivityDepthHeightUnit,SampleCollectionEquipmentName,CharacteristicName,MethodSpeciation,ResultSampleFraction,"
-             << "ResultValue,ResultUnit,ResultValueType,ResultDetectionCondition,ResultDetectionQuantitationLimitMeasure,"
-             << "ResultDetectionQuantitationLimitUnit,ResultDetectionQuantitationLimitType,ResultStatusID,ResultComment,"
-             << "ResultAnalyticalMethodID,ResultAnalyticalMethodContext,ResultAnalyticalMethodName,AnalysisStartDate,"
-             << "AnalysisStartTime,AnalysisEndTimeZone,LaboratoryName,LaboratorySampleID\n";
-
+        oss << "DatasetName,MonitoringLocationID,MonitoringLocationName,";
+        oss << "MonitoringLocationLatitude,MonitoringLocationLongitude,";
+        oss << "MonitoringLocationHorizontalCoordinateReferenceSystem,";
+        oss << "MonitoringLocationHorizontalAccuracyMeasure,";
+        oss << "MonitoringLocationHorizontalAccuracyUnit,MonitoringLocationType,ActivityType,";
+        oss << "ActivityMediaName,ActivityStartDate,ActivityStartTime,ActivityEndDate,";
+        oss << "ActivityEndTime,ActivityDepthHeightMeasure,";
+        oss << "ActivityDepthHeightUnit,SampleCollectionEquipmentName,CharacteristicName,";
+        oss << "MethodSpeciation,ResultSampleFraction,";
+        oss << "ResultValue,ResultUnit,ResultValueType,ResultDetectionCondition,";
+        oss << "ResultDetectionQuantitationLimitMeasure,";
+        oss << "ResultDetectionQuantitationLimitUnit,ResultDetectionQuantitationLimitType,";
+        oss << "ResultStatusID,ResultComment,";
+        oss << "ResultAnalyticalMethodID,ResultAnalyticalMethodContext,ResultAnalyticalMethodName,";
+        oss << "AnalysisStartDate,";
+        oss << "AnalysisStartTime,AnalysisEndTimeZone,LaboratoryName,LaboratorySampleID\n";
+        oss.flush();
         // Write data
-        for (const auto& dataset : datasets) {
-            file << toCSV(dataset);
-        }
-        file.close();
-    } else {
-        std::cerr << "Unable to open file " << filename << std::endl;
-    }
+        //for (const auto& dataset : datasets) {
+        //    file << toCSV(dataset);
+        //}
+        //file <<  DatasetFields::toCSV(datasets.front());
+        ESP_LOGI( "DF", "before");
+        ESP_LOGI( "DF", "%s", oss.str().c_str() );
+        ESP_LOGI( "DF", "done" );
+        //storage->storeData(filename, file.str());
 }

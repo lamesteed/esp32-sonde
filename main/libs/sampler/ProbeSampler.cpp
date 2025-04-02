@@ -28,7 +28,7 @@ const char * ProbeSampler::CFG_TDS_CONVERSION_FACTOR_B      = "TDS_CONVERSION_FA
 const char * ProbeSampler::CFG_PRESSURE_CONVERSION_FACTOR_A = "PRESSURE_CONVERSION_FACTOR_A";
 const char * ProbeSampler::CFG_PRESSURE_CONVERSION_FACTOR_B = "PRESSURE_CONVERSION_FACTOR_B";
 
-ProbeSampler::ProbeSampler()
+ProbeSampler::ProbeSampler( const IStorageService::Ptr & storage )
         : mCalibrationParameters( { { CFG_NUMBER_OF_SAMPLES, "10" },
                                     { CFG_TDS_CONVERSION_FACTOR_A, "434.8" },
                                     { CFG_TDS_CONVERSION_FACTOR_B, "0" },
@@ -37,6 +37,7 @@ ProbeSampler::ProbeSampler()
         , mConfigHelper()
         , mOneWirePtr( std::make_shared<OneWire>( TEMP_SENSOR_INPUT_PIN ) )
         , mTempSensorPtr( std::make_shared<DallasTemperature>( mOneWirePtr.get() ) )
+        , mStorage( storage )
 {
     ESP_LOGI( TAG, "Instance created" );
 }
@@ -135,6 +136,7 @@ ProbeSampler::SampleData ProbeSampler::averageSensorReadings(int numSamples) {
 
 std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int counter) {
 
+
     std::string temperatureUnit = "deg C";
     std::string pressureUnit = "psi";
     std::string tdsUnit = "ppm";
@@ -145,13 +147,68 @@ std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int cou
     std::string monitoringLocationLatitude = "";
     std::string monitoringLocationLongitude = "";
 
-    DatasetFields temperatureRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", temperatureUnit,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "Temperature, water", "", "", "-127", temperatureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+    DatasetFields temperatureRow;
+/*
+    temperatureRow.DatasetName = datasetName;
+    temperatureRow.MonitoringLocationID = monitoringLocationID;
+    temperatureRow.MonitoringLocationName = monitoringLocationName;
+    temperatureRow.MonitoringLocationLatitude =  monitoringLocationLatitude;
+    temperatureRow.MonitoringLocationLongitude =   monitoringLocationLongitude;
+    temperatureRow.MonitoringLocationHorizontalCoordinateReferenceSystem = "GPS";
+    temperatureRow.MonitoringLocationHorizontalAccuracyMeasure = "0";
+    temperatureRow.MonitoringLocationHorizontalAccuracyUnit = "somedata";
+    temperatureRow.MonitoringLocationType = "somedata";
+    temperatureRow.ActivityType = "somedata";
+    temperatureRow.ActivityMediaName = "somedata";
+    temperatureRow.ActivityStartDate = "somedata";
+    temperatureRow.ActivityStartTime = "somedata";
+    temperatureRow.ActivityEndDate = "somedata";
+    temperatureRow.ActivityEndTime = "somedata";
+    temperatureRow.ActivityDepthHeightMeasure = "somedata";
+    temperatureRow.ActivityDepthHeightUnit = "somedata";
+    temperatureRow.SampleCollectionEquipmentName = "somedata";
+    temperatureRow.CharacteristicName = "somedata";
+    temperatureRow.MethodSpeciation = "somedata";
+    temperatureRow.ResultSampleFraction = "somedata";
+    temperatureRow.ResultValue = "somedata";
+    temperatureRow.ResultUnit = "somedata";
+    temperatureRow.ResultValueType = "somedata";
+    temperatureRow.ResultDetectionCondition = "somedata";
+    temperatureRow.ResultDetectionQuantitationLimitMeasure = "somedata";
+    temperatureRow.ResultDetectionQuantitationLimitUnit = "somedata";
+    temperatureRow.ResultDetectionQuantitationLimitType = "somedata";
+    temperatureRow.ResultStatusID = "somedata";
+    temperatureRow.ResultComment = "somedata";
+    temperatureRow.ResultAnalyticalMethodID = "somedata";
+    temperatureRow.ResultAnalyticalMethodContext = "somedata";
+    temperatureRow.ResultAnalyticalMethodName = "somedata";
+    temperatureRow.AnalysisStartDate = "somedata";
+    temperatureRow.AnalysisStartTime = "somedata";
+    temperatureRow.AnalysisEndTimeZone = "somedata";
+    temperatureRow.LaboratoryName = "somedata";
+    temperatureRow.LaboratorySampleID = "somedata"; // , temperatureUnit,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "Temperature, water", "", "", "-127", temperatureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+*/
+    std::vector<DatasetFields> datasets;
+    datasets.push_back( temperatureRow );
+    /*
     DatasetFields pressureRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", pressureUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "pressure", "", "", "0", pressureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
     DatasetFields tdsRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", tdsUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "total dissolved solids", "", "", "0", tdsUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
     DatasetFields conductivityRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "conductivity", "", "", "0", conductivityUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
-
     // writing sample data into string to be sent out via bluetooth
     ESP_LOGI( "writeSampleDataInTestingMode", "Tfloat = %.2f, Tstr = %s", data.temperature, twoDecimalString(data.temperature).c_str()) ;
+
+    //temperatureRow.ResultValue = twoDecimalString(data.temperature);
+    ESP_LOGI( TAG, "1111" );
+    pressureRow.ResultValue = std::to_string(data.pressure);
+    ESP_LOGI( TAG, "2222" );
+    tdsRow.ResultValue = std::to_string(data.tds);
+    ESP_LOGI( TAG, "3333" );
+    conductivityRow.ResultValue = std::to_string(data.conductivity);
+    ESP_LOGI( TAG, "4444" );
+    std::vector<DatasetFields> datasets = {temperatureRow, pressureRow, tdsRow, conductivityRow};
+    ESP_LOGI( TAG, "5555" );
+    */
+    DatasetFields::saveToCSV(mStorage, datasets, "output.csv");
     return "Temperature: " +
     twoDecimalString(data.temperature) + "°C\nPressure: " +
     std::to_string(data.pressure) +  "psi, " +
@@ -160,16 +217,6 @@ std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int cou
     std::to_string(data.tds_voltage) + "v\nConductivity: " +
     std::to_string(data.conductivity) + "uS/cm\n" +
     std::to_string( counter ) + "\n\n";
-    Serial.println("attributes: ");
-
-    temperatureRow.ResultValue = twoDecimalString(data.temperature);
-    pressureRow.ResultValue = std::to_string(data.pressure);
-    tdsRow.ResultValue = std::to_string(data.tds);
-    conductivityRow.ResultValue = std::to_string(data.conductivity);
-
-    std::vector<DatasetFields> datasets = {temperatureRow, pressureRow, tdsRow, conductivityRow};
-
-    DatasetFields::saveToCSV(datasets, "output.csv");
 }
 
 ProbeSampler::~ProbeSampler()

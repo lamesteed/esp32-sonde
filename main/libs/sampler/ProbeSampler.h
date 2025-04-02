@@ -3,6 +3,7 @@
 #define PROBESAMPLER_H
 
 #include "ISampler.h"
+#include "IStorageService.h"
 #include "CCalibrationConfigHelper.h"
 
 class OneWire;
@@ -12,7 +13,7 @@ class ProbeSampler : public ISampler
 {
 public:
     /// @brief Constructor
-    ProbeSampler();
+    ProbeSampler(const IStorageService::Ptr & storage);
 
     /// @brief Virtual destructor
     virtual ~ProbeSampler();
@@ -64,6 +65,8 @@ private:
 
     std::shared_ptr<OneWire> mOneWirePtr;               ///< OneWire instance
     std::shared_ptr<DallasTemperature> mTempSensorPtr;  ///< Temperature sensor instance
+
+    const IStorageService::Ptr mStorage;
 };
 
 #endif // PROBESAMPLER_H
