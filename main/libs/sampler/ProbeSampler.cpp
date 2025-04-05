@@ -148,10 +148,11 @@ std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int cou
     std::string monitoringLocationLongitude = "";
 
     DatasetFields temperatureRow;
-/*
+
     temperatureRow.DatasetName = datasetName;
     temperatureRow.MonitoringLocationID = monitoringLocationID;
     temperatureRow.MonitoringLocationName = monitoringLocationName;
+    /*
     temperatureRow.MonitoringLocationLatitude =  monitoringLocationLatitude;
     temperatureRow.MonitoringLocationLongitude =   monitoringLocationLongitude;
     temperatureRow.MonitoringLocationHorizontalCoordinateReferenceSystem = "GPS";
