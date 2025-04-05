@@ -31,9 +31,9 @@ void DatasetFields::saveToCSV(const IStorageService::Ptr & storage, const std::v
         for (const auto& dataset : datasets) {
            oss << toCSV(dataset);
         }
-        oss <<  DatasetFields::toCSV(datasets.front());
+        //oss <<  DatasetFields::toCSV(datasets.front());
         ESP_LOGI( "DF", "before");
         ESP_LOGI( "DF", "%s", oss.str().c_str() );
         ESP_LOGI( "DF", "done" );
-        // storage->storeData(filename, oss.str());
+        storage->storeData(filename, oss.str());
 }
