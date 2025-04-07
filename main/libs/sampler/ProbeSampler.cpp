@@ -85,9 +85,8 @@ float ProbeSampler::getPressure (float pressure_input_voltage) {
         return (pressure > 0) ?  pressure :  0;
 }
 
-ProbeSampler::SampleData ProbeSampler::readAllSensors() {
+void ProbeSampler::readAllSensors( SampleData & data ) {
     Serial.println("Reading sensors...");
-    SampleData data = {0, 0, 0, 0, 0, 0};;
 
     data.temperature = getTemperatureInCelsius();
     data.pressure_voltage = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
@@ -95,34 +94,36 @@ ProbeSampler::SampleData ProbeSampler::readAllSensors() {
     data.tds_voltage = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
     data.tds = getTDS(data.tds_voltage, data.temperature);
     data.conductivity = getConductivity(data.tds_voltage, data.temperature);
-    return data;
 }
 
-ProbeSampler::SampleData ProbeSampler::averageSensorReadings(int numSamples) {
-    SampleData accumulatedData = {-127, 0, 0, 0, 0, 0};
+ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples) {
+    SampleData::Ptr accumulatedData = std::make_shared<SampleData>();
+    accumulatedData->temperature = -127; // initialize to minimal possible value
 
-    float temp[10];
+    std::vector<float> temp(numSamples);
 
     for (int i = 0; i < numSamples; ++i) {
-        SampleData data = readAllSensors();
+        SampleData data;
+        readAllSensors( data );
         temp[i] = data.temperature;
         // for temperature reading save the highest value
-        if (data.temperature > accumulatedData.temperature ) {
-            accumulatedData.temperature = data.temperature;
+        if (data.temperature > accumulatedData->temperature )
+        {
+            accumulatedData->temperature = data.temperature;
         }
-        accumulatedData.pressure += data.pressure;
-        accumulatedData.pressure_voltage += data.pressure_voltage;
-        accumulatedData.tds += data.tds;
-        accumulatedData.tds_voltage += data.tds_voltage;
-        accumulatedData.conductivity += data.conductivity;
+        accumulatedData->pressure += data.pressure;
+        accumulatedData->pressure_voltage += data.pressure_voltage;
+        accumulatedData->tds += data.tds;
+        accumulatedData->tds_voltage += data.tds_voltage;
+        accumulatedData->conductivity += data.conductivity;
         delayMsec( 10 );                               // delay 10ms between each sample
     }
 
-    accumulatedData.pressure /= numSamples;
-    accumulatedData.pressure_voltage /= numSamples;
-    accumulatedData.tds /= numSamples;
-    accumulatedData.tds_voltage /= numSamples;
-    accumulatedData.conductivity /= numSamples;
+    accumulatedData->pressure /= numSamples;
+    accumulatedData->pressure_voltage /= numSamples;
+    accumulatedData->tds /= numSamples;
+    accumulatedData->tds_voltage /= numSamples;
+    accumulatedData->conductivity /= numSamples;
 
     // print out the temperature values to string stream
     std::ostringstream oss;
@@ -134,89 +135,45 @@ ProbeSampler::SampleData ProbeSampler::averageSensorReadings(int numSamples) {
     return accumulatedData;
 }
 
-std::string ProbeSampler::writeSampleDataInTestingMode (SampleData data, int counter) {
+std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & data, int counter)
+{
+    static const std::string temperatureUnit = "deg C";
+    static const std::string pressureUnit = "psi";
+    static const std::string tdsUnit = "ppm";
+    static const std::string conductivityUnit = "uS/cm";
+    static const std::string datasetName = "MyDatasetName";
+    static const std::string monitoringLocationID = "MyMonitoringLocationID";
+    static const std::string monitoringLocationName = "MyLake";
+    static const std::string monitoringLocationLatitude = "";
+    static const std::string monitoringLocationLongitude = "";
 
+    DatasetFields::Ptr temperatureRow(  new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", temperatureUnit,  "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "Temperature, water",     "", "", "-127", temperatureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    temperatureRow->ResultValue = twoDecimalString( data->temperature );
 
-    std::string temperatureUnit = "deg C";
-    std::string pressureUnit = "psi";
-    std::string tdsUnit = "ppm";
-    std::string conductivityUnit = "uS/cm"; 
-    std::string datasetName = "MyDatasetName";
-    std::string monitoringLocationID = "MyMonitoringLocationID";
-    std::string monitoringLocationName = "MyLake";
-    std::string monitoringLocationLatitude = "";
-    std::string monitoringLocationLongitude = "";
+    DatasetFields::Ptr pressureRow(     new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", pressureUnit,     "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "pressure",               "", "", "0", pressureUnit,       "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    pressureRow->ResultValue = std::to_string( data->pressure );
 
-    DatasetFields temperatureRow;
+    DatasetFields::Ptr tdsRow(          new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", tdsUnit,          "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "total dissolved solids", "", "", "0", tdsUnit,            "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    tdsRow->ResultValue = std::to_string( data->tds );
 
-    temperatureRow.DatasetName = datasetName;
-    temperatureRow.MonitoringLocationID = monitoringLocationID;
-    temperatureRow.MonitoringLocationName = monitoringLocationName;
-    /*
-    temperatureRow.MonitoringLocationLatitude =  monitoringLocationLatitude;
-    temperatureRow.MonitoringLocationLongitude =   monitoringLocationLongitude;
-    temperatureRow.MonitoringLocationHorizontalCoordinateReferenceSystem = "GPS";
-    temperatureRow.MonitoringLocationHorizontalAccuracyMeasure = "0";
-    temperatureRow.MonitoringLocationHorizontalAccuracyUnit = "somedata";
-    temperatureRow.MonitoringLocationType = "somedata";
-    temperatureRow.ActivityType = "somedata";
-    temperatureRow.ActivityMediaName = "somedata";
-    temperatureRow.ActivityStartDate = "somedata";
-    temperatureRow.ActivityStartTime = "somedata";
-    temperatureRow.ActivityEndDate = "somedata";
-    temperatureRow.ActivityEndTime = "somedata";
-    temperatureRow.ActivityDepthHeightMeasure = "somedata";
-    temperatureRow.ActivityDepthHeightUnit = "somedata";
-    temperatureRow.SampleCollectionEquipmentName = "somedata";
-    temperatureRow.CharacteristicName = "somedata";
-    temperatureRow.MethodSpeciation = "somedata";
-    temperatureRow.ResultSampleFraction = "somedata";
-    temperatureRow.ResultValue = "somedata";
-    temperatureRow.ResultUnit = "somedata";
-    temperatureRow.ResultValueType = "somedata";
-    temperatureRow.ResultDetectionCondition = "somedata";
-    temperatureRow.ResultDetectionQuantitationLimitMeasure = "somedata";
-    temperatureRow.ResultDetectionQuantitationLimitUnit = "somedata";
-    temperatureRow.ResultDetectionQuantitationLimitType = "somedata";
-    temperatureRow.ResultStatusID = "somedata";
-    temperatureRow.ResultComment = "somedata";
-    temperatureRow.ResultAnalyticalMethodID = "somedata";
-    temperatureRow.ResultAnalyticalMethodContext = "somedata";
-    temperatureRow.ResultAnalyticalMethodName = "somedata";
-    temperatureRow.AnalysisStartDate = "somedata";
-    temperatureRow.AnalysisStartTime = "somedata";
-    temperatureRow.AnalysisEndTimeZone = "somedata";
-    temperatureRow.LaboratoryName = "somedata";
-    temperatureRow.LaboratorySampleID = "somedata"; // , temperatureUnit,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "Temperature, water", "", "", "-127", temperatureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
-*/
-    std::vector<DatasetFields> datasets;
+    DatasetFields::Ptr conductivityRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "conductivity",           "", "", "0", conductivityUnit,   "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    conductivityRow->ResultValue = std::to_string( data->conductivity );
+
+    std::vector<DatasetFields::Ptr> datasets;
     datasets.push_back( temperatureRow );
-    /*
-    DatasetFields pressureRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", pressureUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "pressure", "", "", "0", pressureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
-    DatasetFields tdsRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", tdsUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "total dissolved solids", "", "", "0", tdsUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
-    DatasetFields conductivityRow = {datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "conductivity", "", "", "0", conductivityUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
-    // writing sample data into string to be sent out via bluetooth
-    ESP_LOGI( "writeSampleDataInTestingMode", "Tfloat = %.2f, Tstr = %s", data.temperature, twoDecimalString(data.temperature).c_str()) ;
+    datasets.push_back( pressureRow );
+    datasets.push_back( tdsRow );
+    datasets.push_back( conductivityRow );
 
-    //temperatureRow.ResultValue = twoDecimalString(data.temperature);
-    ESP_LOGI( TAG, "1111" );
-    pressureRow.ResultValue = std::to_string(data.pressure);
-    ESP_LOGI( TAG, "2222" );
-    tdsRow.ResultValue = std::to_string(data.tds);
-    ESP_LOGI( TAG, "3333" );
-    conductivityRow.ResultValue = std::to_string(data.conductivity);
-    ESP_LOGI( TAG, "4444" );
-    std::vector<DatasetFields> datasets = {temperatureRow, pressureRow, tdsRow, conductivityRow};
-    ESP_LOGI( TAG, "5555" );
-    */
     DatasetFields::saveToCSV(mStorage, datasets, "output.csv");
+
     return "Temperature: " +
-    twoDecimalString(data.temperature) + "°C\nPressure: " +
-    std::to_string(data.pressure) +  "psi, " +
-    twoDecimalString(data.pressure_voltage) + "v\nTDS: " +
-    std::to_string(data.tds) + "ppm, " +
-    std::to_string(data.tds_voltage) + "v\nConductivity: " +
-    std::to_string(data.conductivity) + "uS/cm\n" +
+    twoDecimalString(data->temperature) + "°C\nPressure: " +
+    std::to_string(data->pressure) +  "psi, " +
+    twoDecimalString(data->pressure_voltage) + "v\nTDS: " +
+    std::to_string(data->tds) + "ppm, " +
+    std::to_string(data->tds_voltage) + "v\nConductivity: " +
+    std::to_string(data->conductivity) + "uS/cm\n" +
     std::to_string( counter ) + "\n\n";
 }
 
