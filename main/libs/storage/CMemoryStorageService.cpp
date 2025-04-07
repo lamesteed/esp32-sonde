@@ -65,6 +65,7 @@ bool CMemoryStorageService::listFiles( FileList & outFiles )
     }
     else
     {
+        ESP_LOGI( TAG, "listFiles() - listing files in memory" );
         std::lock_guard<std::mutex> lock( mStorageMutex );
         for ( const auto & file : mStorage )
         {
@@ -82,6 +83,7 @@ bool CMemoryStorageService::readData( const std::string & filename, std::string 
     }
     else
     {
+        ESP_LOGI( TAG, "readData() - reading data from file: %s", filename.c_str() );
         std::lock_guard<std::mutex> lock( mStorageMutex );
         auto it = mStorage.find( filename );
         if ( it != mStorage.end() )
@@ -105,6 +107,7 @@ bool CMemoryStorageService::storeData( const std::string & filename, const std::
     }
     else
     {
+        ESP_LOGI( TAG, "storeData() - storing data to file: %s", filename.c_str() );
         std::lock_guard<std::mutex> lock( mStorageMutex );
         mStorage[filename] = inData;
         return true;

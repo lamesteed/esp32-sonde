@@ -12,13 +12,11 @@
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
-#define TOGGLE_PIN                4         // pin GPIO4 to switch between modes of operation
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
-boolean testMode = 1;
 
 const char * ProbeSampler::TAG = "ProbeSampler";
 
@@ -38,6 +36,7 @@ ProbeSampler::ProbeSampler( const IStorageService::Ptr & storage )
         , mOneWirePtr( std::make_shared<OneWire>( TEMP_SENSOR_INPUT_PIN ) )
         , mTempSensorPtr( std::make_shared<DallasTemperature>( mOneWirePtr.get() ) )
         , mStorage( storage )
+        , mTestMode( true )
 {
     ESP_LOGI( TAG, "Instance created" );
 }
@@ -195,15 +194,13 @@ bool ProbeSampler::init( const CalibrationConfig & config ) {
 
     mTempSensorPtr->begin();                             // initialize temperature sensor
     delayMsec( 1000 );
-    pinMode(TOGGLE_PIN, INPUT);                     // initialize toggle pin as input
-    testMode = digitalRead(TOGGLE_PIN);             // if 1: true, if 0: false
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
     return true;
 }
 
 std::string ProbeSampler::getSample() {
     static int counter = 1;
-    if ( testMode )
+    if ( mTestMode )
     {
         ESP_LOGI(TAG, "Probe in TEST MODE");
         ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );

@@ -110,6 +110,12 @@ bool CStorageService::stop()
 
 bool CStorageService::getStatus()
 {
+    if (!mInitialized) {
+        ESP_LOGE(TAG, "Storage service is not initialized, this=%p", this);
+        return false;
+    }
+    const char* mountpoint = SD_MMC.mountpoint();
+    ESP_LOGI(TAG, "Storage initialized: %d, this=%p, mount = --%s--'", mInitialized, this, mountpoint ? mountpoint : "null");
     return mInitialized;
 }
 
@@ -206,7 +212,7 @@ bool CStorageService::storeData( const std::string & filename, const std::string
     fullFilename += filename;
 
     // open file for writing (will recreate file if it already exists)
-    File file = SD_MMC.open( fullFilename.c_str(), FILE_WRITE );
+    File file = SD_MMC.open( fullFilename.c_str(), FILE_WRITE, true );
     if ( !file )
     {
         ESP_LOGE( TAG, "storeData() - failed to open file for writing" );

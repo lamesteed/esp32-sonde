@@ -74,6 +74,7 @@ private:
     std::shared_ptr<DallasTemperature> mTempSensorPtr;  ///< Temperature sensor instance
 
     IStorageService::Ptr mStorage;
+    bool mTestMode; ///< Flag indicating if test mode is enabled
 };
 
 #endif // PROBESAMPLER_H
