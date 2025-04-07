@@ -17,6 +17,7 @@
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
 float ADC_COMPENSATION = 1;                 // 0dB attenuation
+std::vector<DatasetFields::Ptr> datasets;
 
 const char * ProbeSampler::TAG = "ProbeSampler";
 
@@ -158,7 +159,6 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     DatasetFields::Ptr conductivityRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "conductivity",           "", "", "0", conductivityUnit,   "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
     conductivityRow->ResultValue = std::to_string( data->conductivity );
 
-    std::vector<DatasetFields::Ptr> datasets;
     datasets.push_back( temperatureRow );
     datasets.push_back( pressureRow );
     datasets.push_back( tdsRow );
