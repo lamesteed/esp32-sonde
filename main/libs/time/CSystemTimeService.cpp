@@ -28,6 +28,17 @@ std::string CSystemTimeService::GetTimeAsString()
     return std::string( tmbuf );
 }
 
+std::string CSystemTimeService::GetTimeAsFilename()
+{
+    struct timeval tv;
+    gettimeofday( &tv, NULL );
+    time_t nowtime = tv.tv_sec;
+    struct tm *nowtm = localtime( &nowtime );
+    char tmbuf[64];
+    strftime( tmbuf, sizeof( tmbuf ), "%Y-%m-%d_%H%M%S", nowtm );
+    return std::string( tmbuf );
+}
+
 bool CSystemTimeService::SetTime( long long msec )
 {
     struct timeval tv;

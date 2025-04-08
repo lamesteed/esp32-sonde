@@ -66,6 +66,7 @@ private:
     static const char * CFG_TDS_CONVERSION_FACTOR_B;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_A;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_B;
+    static const char * CFG_FILENAME;
 
     CalibrationParams mCalibrationParameters;           ///< Expected calibration parameters and their default values
     CCalibrationConfigHelper::Ptr mConfigHelper;        ///< Calibration configuration helper

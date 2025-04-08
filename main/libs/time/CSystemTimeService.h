@@ -13,7 +13,12 @@ public:
     /// @brief Destructor
     virtual ~CSystemTimeService();
 
-private:
+    // ITimeService interface
+    /// @brief Get current system time as string to be used in filenames
+    /// @return Current system time as string
+    std::string GetTimeAsFilename();
+
+    private:
     // ITimeService interface
     /// @brief Get current system time as string
     /// @return Current system time as string

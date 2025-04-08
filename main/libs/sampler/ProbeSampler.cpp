@@ -1,5 +1,5 @@
 #include "ProbeSampler.h"
-#include "csv/DatasetFields.h"
+#include "DatasetFields.h"
 #include "esp_log.h"
 #include "delay.h"
 #include <Arduino.h>
@@ -26,13 +26,15 @@ const char * ProbeSampler::CFG_TDS_CONVERSION_FACTOR_A      = "TDS_CONVERSION_FA
 const char * ProbeSampler::CFG_TDS_CONVERSION_FACTOR_B      = "TDS_CONVERSION_FACTOR_B";
 const char * ProbeSampler::CFG_PRESSURE_CONVERSION_FACTOR_A = "PRESSURE_CONVERSION_FACTOR_A";
 const char * ProbeSampler::CFG_PRESSURE_CONVERSION_FACTOR_B = "PRESSURE_CONVERSION_FACTOR_B";
+const char * ProbeSampler::CFG_FILENAME = "FILENAME";
 
 ProbeSampler::ProbeSampler( const IStorageService::Ptr & storage )
         : mCalibrationParameters( { { CFG_NUMBER_OF_SAMPLES, "10" },
                                     { CFG_TDS_CONVERSION_FACTOR_A, "434.8" },
                                     { CFG_TDS_CONVERSION_FACTOR_B, "0" },
                                     { CFG_PRESSURE_CONVERSION_FACTOR_A, "25" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-12.5" } } )
+                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-12.5" }, 
+                                    { CFG_FILENAME, "output.csv" }} )
         , mConfigHelper()
         , mOneWirePtr( std::make_shared<OneWire>( TEMP_SENSOR_INPUT_PIN ) )
         , mTempSensorPtr( std::make_shared<DallasTemperature>( mOneWirePtr.get() ) )
@@ -163,8 +165,7 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     datasets.push_back( pressureRow );
     datasets.push_back( tdsRow );
     datasets.push_back( conductivityRow );
-
-    DatasetFields::saveToCSV(mStorage, datasets, "output.csv");
+    DatasetFields::saveToCSV(mStorage, datasets, mConfigHelper->getAsString( CFG_FILENAME ));
 
     return "Temperature: " +
     twoDecimalString(data->temperature) + "°C\nPressure: " +
@@ -183,7 +184,6 @@ ProbeSampler::~ProbeSampler()
 
 bool ProbeSampler::init( const CalibrationConfig & config ) {
     ESP_LOGI( TAG, "Initializing ..." );
-
     mConfigHelper = std::make_shared<CCalibrationConfigHelper>( config, mCalibrationParameters );
     // Iterate through expected calibration parameters and print values that will be used for sampling
     ESP_LOGI( TAG, "Calibration parameters that will be applied:" );
@@ -200,12 +200,13 @@ bool ProbeSampler::init( const CalibrationConfig & config ) {
 
 std::string ProbeSampler::getSample() {
     static int counter = 1;
+
     if ( mTestMode )
     {
         ESP_LOGI(TAG, "Probe in TEST MODE");
         ESP_LOGI( TAG, "getSample retrieved sample #%d ", counter );
         return writeSampleDataInTestingMode(
-                averageSensorReadings( mConfigHelper->getAsInt( CFG_NUMBER_OF_SAMPLES ) ),
+                averageSensorReadings( mConfigHelper->getAsInt( CFG_NUMBER_OF_SAMPLES ) ), 
                 counter++ );
     } else
     {
