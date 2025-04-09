@@ -9,7 +9,7 @@ const char * CSystemTimeService::TAG = "CSystemTimeService";
 
 CSystemTimeService::CSystemTimeService()
 {
-    ESP_LOGI( TAG, "Instance created, System Time: %s", GetTimeAsString().c_str() );
+    ESP_LOGI( TAG, "Instance created, System Time: %s", GetTimeAsString("%Y-%m-%d %H:%M:%S").c_str() );
 }
 
 CSystemTimeService::~CSystemTimeService()
@@ -17,25 +17,14 @@ CSystemTimeService::~CSystemTimeService()
     ESP_LOGI( TAG, "Instance destroyed" );
 }
 
-std::string CSystemTimeService::GetTimeAsString()
+std::string CSystemTimeService::GetTimeAsString(const std::string &format)
 {
     struct timeval tv;
     gettimeofday( &tv, NULL );
     time_t nowtime = tv.tv_sec;
     struct tm *nowtm = localtime( &nowtime );
     char tmbuf[64];
-    strftime( tmbuf, sizeof( tmbuf ), "%Y-%m-%d %H:%M:%S", nowtm );
-    return std::string( tmbuf );
-}
-
-std::string CSystemTimeService::GetTimeAsFilename()
-{
-    struct timeval tv;
-    gettimeofday( &tv, NULL );
-    time_t nowtime = tv.tv_sec;
-    struct tm *nowtm = localtime( &nowtime );
-    char tmbuf[64];
-    strftime( tmbuf, sizeof( tmbuf ), "%Y-%m-%d_%H%M%S", nowtm );
+    strftime( tmbuf, sizeof( tmbuf ), format.c_str(), nowtm );
     return std::string( tmbuf );
 }
 

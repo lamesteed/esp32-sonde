@@ -14,7 +14,7 @@ public:
 
     /// @brief Get current system time as string
     /// @return Current system time as string
-    virtual std::string GetTimeAsString() = 0;
+    virtual std::string GetTimeAsString(const std::string &format = "%Y-%m-%d %H:%M:%S") = 0;
 
     /// @brief Set system time
     /// @param msec unix timestamp in milliseconds to set

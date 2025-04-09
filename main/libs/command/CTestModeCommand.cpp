@@ -57,7 +57,7 @@ bool CTestModeCommand::execute()
 
     // create filename for output data using current time in format YYYYMMDD_HHMMSS
     CSystemTimeService timeService; 
-    std::string filename = "output_" + timeService.GetTimeAsFilename() + ".csv";
+    std::string filename = "output_" + timeService.GetTimeAsString("%Y-%m-%d_%H%M%S") + ".csv";
     config["FILENAME"] = filename;
 
     // initialize sampler
