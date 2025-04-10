@@ -1,5 +1,6 @@
 #include "ProbeSampler.h"
 #include "DatasetFields.h"
+#include "CSystemTimeService.h"
 #include "esp_log.h"
 #include "delay.h"
 #include <Arduino.h>
@@ -149,16 +150,51 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     static const std::string monitoringLocationLatitude = "";
     static const std::string monitoringLocationLongitude = "";
 
-    DatasetFields::Ptr temperatureRow(  new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", temperatureUnit,  "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "Temperature, water",     "", "", "-127", temperatureUnit, "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    CSystemTimeService timeService; 
+
+    DatasetFields::Ptr temperatureRow(  new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", temperatureUnit
+        ,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "", "", "", ""
+        , "0", "m", "Probe/Sensor", "Temperature","", "", "-127", temperatureUnit, "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+        
+    temperatureRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    temperatureRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    temperatureRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    temperatureRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
     temperatureRow->ResultValue = twoDecimalString( data->temperature );
 
-    DatasetFields::Ptr pressureRow(     new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", pressureUnit,     "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "pressure",               "", "", "0", pressureUnit,       "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    DatasetFields::Ptr pressureRow(     new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", pressureUnit
+        ,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "", "", "", ""
+        , "0", "m", "Probe/Sensor", "pressure","", "", "0", pressureUnit,       "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    pressureRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    pressureRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    pressureRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    pressureRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
     pressureRow->ResultValue = std::to_string( data->pressure );
 
-    DatasetFields::Ptr tdsRow(          new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", tdsUnit,          "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "total dissolved solids", "", "", "0", tdsUnit,            "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    DatasetFields::Ptr tdsRow(          new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", tdsUnit
+        ,"Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
+        , "0", "m", "Probe/Sensor", "total dissolved solids", "", "", "0", tdsUnit,            "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    tdsRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    tdsRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    tdsRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    tdsRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
     tdsRow->ResultValue = std::to_string( data->tds );
 
-    DatasetFields::Ptr conductivityRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName, monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit, "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "2018-01-30", "13:08:01", "13:08:01", "14:08:01", "0", "m", "Probe/Sensor", "conductivity",           "", "", "0", conductivityUnit,   "Actual", "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    DatasetFields::Ptr conductivityRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", conductivityUnit
+        , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
+        , "0", "m", "Probe/Sensor", "conductivity",           "", "", "0", conductivityUnit,   "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    conductivityRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    conductivityRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    conductivityRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    conductivityRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
     conductivityRow->ResultValue = std::to_string( data->conductivity );
 
     datasets.push_back( temperatureRow );
