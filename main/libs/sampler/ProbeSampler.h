@@ -41,17 +41,21 @@ private:
         float tds_voltage;
         float tds;
         float conductivity;
+        float ph;
+        float do2;
 
         SampleData() : temperature(0), pressure_voltage(0), pressure(0),
-                       tds_voltage(0), tds(0), conductivity(0)
+                       tds_voltage(0), tds(0), conductivity(0), ph(0), do2(0)
         {
         }
     };
 
     float getTemperatureInCelsius();
     float getAnalogInputVoltage (int inputPin);
-    float getTDS (float tds_input_voltage, float temperature);
-    float getConductivity (float tds_input_voltage, float temperature);
+    float getTDS (float tds_input_voltage);
+    float getPH (float ph_input_voltage);
+    float getDO (float do_input_voltage);
+    float getConductivity (float tds_input_voltage);
     float getPressure (float pressure_input_voltage);
     void readAllSensors( SampleData & data );
     std::string twoDecimalString(float value);
@@ -66,6 +70,10 @@ private:
     static const char * CFG_TDS_CONVERSION_FACTOR_B;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_A;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_B;
+    static const char * CFG_PH_CONVERSION_FACTOR_A;
+    static const char * CFG_PH_CONVERSION_FACTOR_B;
+    static const char * CFG_DO_CONVERSION_FACTOR_A;
+    static const char * CFG_DO_CONVERSION_FACTOR_B;
     static const char * CFG_FILENAME;
 
     CalibrationParams mCalibrationParameters;           ///< Expected calibration parameters and their default values
