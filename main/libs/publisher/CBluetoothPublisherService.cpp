@@ -190,9 +190,9 @@ bool CBluetoothPublisherService::start()
 
     // Start advertising
     BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID( SERVICE_UUID );
-    pAdvertising->setScanResponse( false );
-    pAdvertising->setMinPreferred( 0x0 );
+    //pAdvertising->addServiceUUID( SERVICE_UUID );
+    //pAdvertising->setScanResponse( false );
+    //pAdvertising->setMinPreferred( 0x0 );
 
     // Note we only need to define scan response if we have a BLE Service name that is too long
     BLEAdvertisementData advertisementData;
@@ -200,6 +200,7 @@ bool CBluetoothPublisherService::start()
 
     // Add UUIDs or other data to advertisement packet here if needed
     advertisementData.setFlags( ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT );
+    advertisementData.setCompleteServices(BLEUUID(SERVICE_UUID)); // Add SERVICE_UUID here
     pAdvertising->setAdvertisementData( advertisementData );
 
     // Add the device name to the scan response
