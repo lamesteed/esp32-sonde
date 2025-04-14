@@ -2,6 +2,7 @@
 #include "ProbeSampler.h"
 #include "CDummySampler.h"
 #include "IDataPublisherService.h"
+#include "CSystemTimeService.h"
 
 #include <memory>
 #include <sstream>
@@ -53,6 +54,11 @@ bool CTestModeCommand::execute()
         // add key and value to configuration
         config[key] = value;
     }
+
+    // create filename for output data using current time in format YYYYMMDD_HHMMSS
+    CSystemTimeService timeService; 
+    std::string filename = "output_" + timeService.GetTimeAsString("%Y-%m-%d_%H%M%S") + ".csv";
+    config["FILENAME"] = filename;
 
     // initialize sampler
     if ( !mSampler->init( config ) )

@@ -3,6 +3,7 @@
 #define PROBESAMPLER_H
 
 #include "ISampler.h"
+#include "IStorageService.h"
 #include "CCalibrationConfigHelper.h"
 
 class OneWire;
@@ -12,7 +13,7 @@ class ProbeSampler : public ISampler
 {
 public:
     /// @brief Constructor
-    ProbeSampler();
+    ProbeSampler(const IStorageService::Ptr & storage);
 
     /// @brief Virtual destructor
     virtual ~ProbeSampler();
@@ -32,12 +33,19 @@ private:
 
 private:
     struct SampleData {
+        using Ptr = std::shared_ptr<SampleData>;
+
         float temperature;
         float pressure_voltage;
         float pressure;
         float tds_voltage;
         float tds;
         float conductivity;
+
+        SampleData() : temperature(0), pressure_voltage(0), pressure(0),
+                       tds_voltage(0), tds(0), conductivity(0)
+        {
+        }
     };
 
     float getTemperatureInCelsius();
@@ -45,10 +53,10 @@ private:
     float getTDS (float tds_input_voltage, float temperature);
     float getConductivity (float tds_input_voltage, float temperature);
     float getPressure (float pressure_input_voltage);
-    SampleData readAllSensors();
+    void readAllSensors( SampleData & data );
     std::string twoDecimalString(float value);
-    std::string writeSampleDataInTestingMode (SampleData data, int counter);
-    SampleData averageSensorReadings(int numSamples);
+    std::string writeSampleDataInTestingMode (const SampleData::Ptr & data, int counter);
+    SampleData::Ptr averageSensorReadings(int numSamples);
 
     static const char * TAG;
 
@@ -58,12 +66,16 @@ private:
     static const char * CFG_TDS_CONVERSION_FACTOR_B;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_A;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_B;
+    static const char * CFG_FILENAME;
 
     CalibrationParams mCalibrationParameters;           ///< Expected calibration parameters and their default values
     CCalibrationConfigHelper::Ptr mConfigHelper;        ///< Calibration configuration helper
 
     std::shared_ptr<OneWire> mOneWirePtr;               ///< OneWire instance
     std::shared_ptr<DallasTemperature> mTempSensorPtr;  ///< Temperature sensor instance
+
+    IStorageService::Ptr mStorage;
+    bool mTestMode; ///< Flag indicating if test mode is enabled
 };
 
 #endif // PROBESAMPLER_H

@@ -42,7 +42,7 @@ void CSondeApp::run()
     }
 
     // Create sampler instance
-    ISampler::Ptr sampler = std::make_shared<ProbeSampler>();
+    ISampler::Ptr sampler = std::make_shared<ProbeSampler>(storage);
 
     // Safely create shared pointer to this object
     IRebootable::Ptr rebootable = shared_from_this();

@@ -1,11 +1,17 @@
 #ifndef DATASETFIELDS_H
 #define DATASETFIELDS_H
 
+#include "IStorageService.h"
+
 #include <string>
 #include <vector>
+#include <sstream>
 
 
 struct DatasetFields {
+    using Ptr = std::shared_ptr<DatasetFields>;
+    using ListPtr = std::vector<DatasetFields::Ptr>;
+
     std::string DatasetName;
     std::string MonitoringLocationID;
     std::string MonitoringLocationName;
@@ -45,8 +51,8 @@ struct DatasetFields {
     std::string LaboratoryName;
     std::string LaboratorySampleID;
 
-    static std::string toCSV(const DatasetFields& dataset);
-    static void saveToCSV(const std::vector<DatasetFields>& datasets, const std::string& filename);
+    static void toCSV( std::ostringstream & oss, const DatasetFields::Ptr & dataset );
+    static void saveToCSV( const IStorageService::Ptr & storage, const DatasetFields::ListPtr & datasets, const std::string& filename );
 };
 
 #endif // DATASETFIELDS_H

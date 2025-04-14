@@ -13,12 +13,12 @@ public:
     /// @brief Destructor
     virtual ~CSystemTimeService();
 
-private:
     // ITimeService interface
     /// @brief Get current system time as string
     /// @return Current system time as string
-    std::string GetTimeAsString() override;
+    std::string GetTimeAsString(const std::string &format = "%Y-%m-%d %H:%M:%S") override;
 
+    private:
     /// @brief Set system time
     /// @param msec unix timestamp in milliseconds to set
     /// @return true if time set successfully, false otherwise

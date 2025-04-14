@@ -15,6 +15,7 @@ idf_component_register(
     SRCS "libs/storage/CStorageService.cpp"
     SRCS "libs/storage/CMemoryStorageService.cpp"
     SRCS "libs/time/CSystemTimeService.cpp"
+    SRCS "libs/csv/DatasetFields.cpp"
     INCLUDE_DIRS ""
     INCLUDE_DIRS "libs"
     INCLUDE_DIRS "libs/publisher"
@@ -22,6 +23,7 @@ idf_component_register(
     INCLUDE_DIRS "libs/command"
     INCLUDE_DIRS "libs/storage"
     INCLUDE_DIRS "libs/time"
+    INCLUDE_DIRS "libs/csv"
 )
 
 set(EXTRA_COMPONENT_DIRS "${PROJECT_DIR}/components")
