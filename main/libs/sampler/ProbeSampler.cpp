@@ -13,8 +13,8 @@
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
-#define PH_SENSOR_INPUT_PIN       12        // pin GPIO12 to PH sensor
-#define DO_SENSOR_INPUT_PIN       13        // pin GPIO13 to DO sensor
+#define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
+#define DO_SENSOR_INPUT_PIN       27        // pin GPIO27 to DO sensor
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
@@ -174,6 +174,8 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     static const std::string pressureUnit = "psi";
     static const std::string tdsUnit = "ppm";
     static const std::string conductivityUnit = "uS/cm";
+    static const std::string phUnit = "pH";
+    static const std::string doUnit = "TBD";
     static const std::string datasetName = "MyDatasetName";
     static const std::string monitoringLocationID = "MyMonitoringLocationID";
     static const std::string monitoringLocationName = "MyLake";
@@ -227,10 +229,35 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     conductivityRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
     conductivityRow->ResultValue = std::to_string( data->conductivity );
 
+    DatasetFields::Ptr phRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", phUnit
+        , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
+        , "0", "m", "Probe/Sensor", "pH",           "", "", "0", phUnit,   "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    phRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    phRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    phRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    phRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
+    phRow->ResultValue = std::to_string( data->conductivity );
+
+    DatasetFields::Ptr doRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", doUnit
+        , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
+        , "0", "m", "Probe/Sensor", "TBD",           "", "", "0", doUnit,   "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    doRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    doRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    doRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    doRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
+    doRow->ResultValue = std::to_string( data->conductivity );
+
     datasets.push_back( temperatureRow );
     datasets.push_back( pressureRow );
     datasets.push_back( tdsRow );
     datasets.push_back( conductivityRow );
+    datasets.push_back( phRow );
+    datasets.push_back( doRow );
+
     DatasetFields::saveToCSV(mStorage, datasets, mConfigHelper->getAsString( CFG_FILENAME ));
 
     return "Temperature: " +
