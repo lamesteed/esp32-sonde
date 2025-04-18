@@ -174,7 +174,7 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     static const std::string tdsUnit = "ppm";
     static const std::string conductivityUnit = "uS/cm";
     static const std::string phUnit = "pH";
-    static const std::string doUnit = "TBD";
+    static const std::string doUnit = "mg/l";
     static const std::string datasetName = "MyDatasetName";
     static const std::string monitoringLocationID = "MyMonitoringLocationID";
     static const std::string monitoringLocationName = "MyLake";
@@ -242,7 +242,7 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     DatasetFields::Ptr doRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
         , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", doUnit
         , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
-        , "0", "m", "Probe/Sensor", "TBD",           "", "", "0", doUnit,   "Actual"
+        , "0", "m", "Probe/Sensor", "mg/l",           "", "", "0", doUnit,   "Actual"
         , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
     doRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
     doRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
@@ -268,7 +268,7 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     std::to_string(data->conductivity) + "uS/cm\nPh: " +
     std::to_string(data->ph) + "pH, " +
     std::to_string(data->ph_voltage) + "v\nDO: " +
-    std::to_string(data->do2) + "TBD, " +
+    std::to_string(data->do2) + "mg/l, " +
     std::to_string(data->do2_voltage) + "v\n" +
 
     std::to_string( counter ) + "\n\n";
