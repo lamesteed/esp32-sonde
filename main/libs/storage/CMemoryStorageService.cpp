@@ -38,6 +38,10 @@ bool CMemoryStorageService::start()
         oss << "TDS_CONVERSION_FACTOR_B=0" << std::endl;
         oss << "PRESSURE_CONVERSION_FACTOR_A=25" << std::endl;
         oss << "PRESSURE_CONVERSION_FACTOR_B=-12.5" << std::endl;
+        oss << "PH_CONVERSION_FACTOR_A=1" << std::endl;
+        oss << "PH_CONVERSION_FACTOR_B=0" << std::endl;
+        oss << "DO_CONVERSION_FACTOR_A=1" << std::endl;
+        oss << "DO_CONVERSION_FACTOR_B=0" << std::endl;
         {
             std::lock_guard<std::mutex> lock( mStorageMutex );
             mStorage["sampler.cfg" ] = oss.str();

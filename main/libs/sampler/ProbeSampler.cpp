@@ -13,6 +13,8 @@
 #define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
+#define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
+#define DO_SENSOR_INPUT_PIN       27        // pin GPIO27 to DO sensor
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
@@ -27,6 +29,10 @@ const char * ProbeSampler::CFG_TDS_CONVERSION_FACTOR_A      = "TDS_CONVERSION_FA
 const char * ProbeSampler::CFG_TDS_CONVERSION_FACTOR_B      = "TDS_CONVERSION_FACTOR_B";
 const char * ProbeSampler::CFG_PRESSURE_CONVERSION_FACTOR_A = "PRESSURE_CONVERSION_FACTOR_A";
 const char * ProbeSampler::CFG_PRESSURE_CONVERSION_FACTOR_B = "PRESSURE_CONVERSION_FACTOR_B";
+const char * ProbeSampler::CFG_PH_CONVERSION_FACTOR_A      = "PH_CONVERSION_FACTOR_A";
+const char * ProbeSampler::CFG_PH_CONVERSION_FACTOR_B      = "PH_CONVERSION_FACTOR_B";
+const char * ProbeSampler::CFG_DO_CONVERSION_FACTOR_A = "DO_CONVERSION_FACTOR_A";
+const char * ProbeSampler::CFG_DO_CONVERSION_FACTOR_B = "DO_CONVERSION_FACTOR_B";
 const char * ProbeSampler::CFG_FILENAME = "FILENAME";
 
 ProbeSampler::ProbeSampler( const IStorageService::Ptr & storage )
@@ -35,6 +41,10 @@ ProbeSampler::ProbeSampler( const IStorageService::Ptr & storage )
                                     { CFG_TDS_CONVERSION_FACTOR_B, "0" },
                                     { CFG_PRESSURE_CONVERSION_FACTOR_A, "25" },
                                     { CFG_PRESSURE_CONVERSION_FACTOR_B, "-12.5" }, 
+                                    { CFG_PH_CONVERSION_FACTOR_A, "1" },
+                                    { CFG_PH_CONVERSION_FACTOR_B, "0" },
+                                    { CFG_DO_CONVERSION_FACTOR_A, "1" },
+                                    { CFG_DO_CONVERSION_FACTOR_B, "0" }, 
                                     { CFG_FILENAME, "output.csv" }} )
         , mConfigHelper()
         , mOneWirePtr( std::make_shared<OneWire>( TEMP_SENSOR_INPUT_PIN ) )
@@ -62,30 +72,37 @@ float ProbeSampler::getAnalogInputVoltage (int inputPin) {
     return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
-float ProbeSampler::getTDS (float tds_input_voltage, float temperature) {
-    float k = mConfigHelper->getAsFloat( CFG_TDS_CONVERSION_FACTOR_A );
-    float b = mConfigHelper->getAsFloat( CFG_TDS_CONVERSION_FACTOR_B );
-    // TDS = k * V + b
-    float tds = k * tds_input_voltage + b; // assuming 0v = 0ppm, 2.3v = 1000ppm.
-     return (tds > 0) ? tds : 0;
+float ProbeSampler::calculate(float input_voltage, const std::string &factorAKey, const std::string &factorBKey) {
+    float k = mConfigHelper->getAsFloat(factorAKey);
+    float b = mConfigHelper->getAsFloat(factorBKey);
+    float result = k * input_voltage + b;
+    return (result > 0) ? result : 0;
 }
 
-float ProbeSampler::getConductivity (float tds_input_voltage, float temperature) {
+float ProbeSampler::getTDS(float tds_input_voltage) {
+    return calculate(tds_input_voltage, CFG_TDS_CONVERSION_FACTOR_A, CFG_TDS_CONVERSION_FACTOR_B);
+}
+
+float ProbeSampler::getConductivity (float tds_input_voltage) {
     /* Conductivity = TDS * conversion factor, where
         0.65 - general purpose
         0.5  - sea water
         0.7  - drinking water
         0.8  - hydroponics */
-    float conductivity = getTDS(tds_input_voltage, temperature)/0.7; // assuming 0.7 conversion factor
+    float conductivity = getTDS(tds_input_voltage)/0.7; // assuming 0.7 conversion factor
     return (conductivity > 0) ? conductivity : 0;
 }
 
-float ProbeSampler::getPressure (float pressure_input_voltage) {
-        float k = mConfigHelper->getAsFloat( CFG_PRESSURE_CONVERSION_FACTOR_A );
-        float b = mConfigHelper->getAsFloat( CFG_PRESSURE_CONVERSION_FACTOR_B );
-        // Pressure = k * V + b
-        float pressure = k * pressure_input_voltage + b; // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
-        return (pressure > 0) ?  pressure :  0;
+float ProbeSampler::getPH(float ph_input_voltage) {
+    return calculate(ph_input_voltage, CFG_PH_CONVERSION_FACTOR_A, CFG_PH_CONVERSION_FACTOR_B);
+}
+
+float ProbeSampler::getDO(float do_input_voltage) {
+    return calculate(do_input_voltage, CFG_DO_CONVERSION_FACTOR_A, CFG_DO_CONVERSION_FACTOR_B);
+}
+
+float ProbeSampler::getPressure(float pressure_input_voltage) {
+    return calculate(pressure_input_voltage, CFG_PRESSURE_CONVERSION_FACTOR_A, CFG_PRESSURE_CONVERSION_FACTOR_B);
 }
 
 void ProbeSampler::readAllSensors( SampleData & data ) {
@@ -95,8 +112,12 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
     data.pressure_voltage = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
     data.pressure = getPressure(data.pressure_voltage);
     data.tds_voltage = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
-    data.tds = getTDS(data.tds_voltage, data.temperature);
-    data.conductivity = getConductivity(data.tds_voltage, data.temperature);
+    data.tds = getTDS(data.tds_voltage);
+    data.conductivity = getConductivity(data.tds_voltage);
+    data.ph_voltage = getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
+    data.ph = getPH(data.ph_voltage);
+    data.do2_voltage = getAnalogInputVoltage(DO_SENSOR_INPUT_PIN);
+    data.do2 = getDO(data.do2_voltage);
 }
 
 ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples) {
@@ -119,6 +140,10 @@ ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples
         accumulatedData->tds += data.tds;
         accumulatedData->tds_voltage += data.tds_voltage;
         accumulatedData->conductivity += data.conductivity;
+        accumulatedData->ph_voltage += data.ph_voltage;
+        accumulatedData->ph += data.ph;
+        accumulatedData->do2_voltage += data.do2_voltage;
+        accumulatedData->do2 += data.do2;
         delayMsec( 10 );                               // delay 10ms between each sample
     }
 
@@ -127,6 +152,10 @@ ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples
     accumulatedData->tds /= numSamples;
     accumulatedData->tds_voltage /= numSamples;
     accumulatedData->conductivity /= numSamples;
+    accumulatedData->ph_voltage /= numSamples;
+    accumulatedData->ph /= numSamples;
+    accumulatedData->do2_voltage /= numSamples;
+    accumulatedData->do2 /= numSamples;
 
     // print out the temperature values to string stream
     std::ostringstream oss;
@@ -144,6 +173,8 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     static const std::string pressureUnit = "psi";
     static const std::string tdsUnit = "ppm";
     static const std::string conductivityUnit = "uS/cm";
+    static const std::string phUnit = "pH";
+    static const std::string doUnit = "mg/l";
     static const std::string datasetName = "MyDatasetName";
     static const std::string monitoringLocationID = "MyMonitoringLocationID";
     static const std::string monitoringLocationName = "MyLake";
@@ -197,10 +228,35 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     conductivityRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
     conductivityRow->ResultValue = std::to_string( data->conductivity );
 
+    DatasetFields::Ptr phRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", phUnit
+        , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
+        , "0", "m", "Probe/Sensor", "pH",           "", "", "0", phUnit,   "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    phRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    phRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    phRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    phRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
+    phRow->ResultValue = std::to_string( data->conductivity );
+
+    DatasetFields::Ptr doRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
+        , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", doUnit
+        , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
+        , "0", "m", "Probe/Sensor", "mg/l",           "", "", "0", doUnit,   "Actual"
+        , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
+    doRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
+    doRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
+    doRow->ActivityEndDate = timeService.GetTimeAsString("%Y-%m-%d");
+    doRow->ActivityEndTime = timeService.GetTimeAsString("%H:%M:%S");
+    doRow->ResultValue = std::to_string( data->conductivity );
+
     datasets.push_back( temperatureRow );
     datasets.push_back( pressureRow );
     datasets.push_back( tdsRow );
     datasets.push_back( conductivityRow );
+    datasets.push_back( phRow );
+    datasets.push_back( doRow );
+
     DatasetFields::saveToCSV(mStorage, datasets, mConfigHelper->getAsString( CFG_FILENAME ));
 
     return "Temperature: " +
@@ -209,7 +265,12 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     twoDecimalString(data->pressure_voltage) + "v\nTDS: " +
     std::to_string(data->tds) + "ppm, " +
     std::to_string(data->tds_voltage) + "v\nConductivity: " +
-    std::to_string(data->conductivity) + "uS/cm\n" +
+    std::to_string(data->conductivity) + "uS/cm\nPh: " +
+    std::to_string(data->ph) + "pH, " +
+    std::to_string(data->ph_voltage) + "v\nDO: " +
+    std::to_string(data->do2) + "mg/l, " +
+    std::to_string(data->do2_voltage) + "v\n" +
+
     std::to_string( counter ) + "\n\n";
 }
 
