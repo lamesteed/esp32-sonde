@@ -41,17 +41,20 @@ private:
         float tds_voltage;
         float tds;
         float conductivity;
+        float ph_voltage;
         float ph;
+        float do2_voltage;
         float do2;
 
         SampleData() : temperature(0), pressure_voltage(0), pressure(0),
-                       tds_voltage(0), tds(0), conductivity(0), ph(0), do2(0)
+                       tds_voltage(0), tds(0), conductivity(0), ph_voltage(0), ph(0), do2_voltage(0), do2(0)
         {
         }
     };
 
     float getTemperatureInCelsius();
     float getAnalogInputVoltage (int inputPin);
+    float calculate(float input_voltage, const std::string &factorAKey, const std::string &factorBKey);
     float getTDS (float tds_input_voltage);
     float getPH (float ph_input_voltage);
     float getDO (float do_input_voltage);

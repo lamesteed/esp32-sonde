@@ -72,12 +72,15 @@ float ProbeSampler::getAnalogInputVoltage (int inputPin) {
     return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
-float ProbeSampler::getTDS (float tds_input_voltage) {
-    float k = mConfigHelper->getAsFloat( CFG_TDS_CONVERSION_FACTOR_A );
-    float b = mConfigHelper->getAsFloat( CFG_TDS_CONVERSION_FACTOR_B );
-    // TDS = k * V + b
-    float tds = k * tds_input_voltage + b; // assuming 0v = 0ppm, 2.3v = 1000ppm.
-     return (tds > 0) ? tds : 0;
+float ProbeSampler::calculate(float input_voltage, const std::string &factorAKey, const std::string &factorBKey) {
+    float k = mConfigHelper->getAsFloat(factorAKey);
+    float b = mConfigHelper->getAsFloat(factorBKey);
+    float result = k * input_voltage + b;
+    return (result > 0) ? result : 0;
+}
+
+float ProbeSampler::getTDS(float tds_input_voltage) {
+    return calculate(tds_input_voltage, CFG_TDS_CONVERSION_FACTOR_A, CFG_TDS_CONVERSION_FACTOR_B);
 }
 
 float ProbeSampler::getConductivity (float tds_input_voltage) {
@@ -90,26 +93,16 @@ float ProbeSampler::getConductivity (float tds_input_voltage) {
     return (conductivity > 0) ? conductivity : 0;
 }
 
-float ProbeSampler::getPH (float ph_input_voltage) {
-    float k = mConfigHelper->getAsFloat( CFG_PH_CONVERSION_FACTOR_A );
-    float b = mConfigHelper->getAsFloat( CFG_PH_CONVERSION_FACTOR_B );
-    // TDS = k * V + b
-    float tds = k * ph_input_voltage + b; // assuming 0v = 0ppm, 2.3v = 1000ppm.
-     return (tds > 0) ? tds : 0;
+float ProbeSampler::getPH(float ph_input_voltage) {
+    return calculate(ph_input_voltage, CFG_PH_CONVERSION_FACTOR_A, CFG_PH_CONVERSION_FACTOR_B);
 }
-float ProbeSampler::getDO (float do_input_voltage) {
-    float k = mConfigHelper->getAsFloat( CFG_DO_CONVERSION_FACTOR_A );
-    float b = mConfigHelper->getAsFloat( CFG_DO_CONVERSION_FACTOR_B );
-    // TDS = k * V + b
-    float tds = k * do_input_voltage + b; // assuming 0v = 0ppm, 2.3v = 1000ppm.
-     return (tds > 0) ? tds : 0;
+
+float ProbeSampler::getDO(float do_input_voltage) {
+    return calculate(do_input_voltage, CFG_DO_CONVERSION_FACTOR_A, CFG_DO_CONVERSION_FACTOR_B);
 }
-float ProbeSampler::getPressure (float pressure_input_voltage) {
-        float k = mConfigHelper->getAsFloat( CFG_PRESSURE_CONVERSION_FACTOR_A );
-        float b = mConfigHelper->getAsFloat( CFG_PRESSURE_CONVERSION_FACTOR_B );
-        // Pressure = k * V + b
-        float pressure = k * pressure_input_voltage + b; // assuming 0.5V = 0 PSI and 4.5V = 100 PSI
-        return (pressure > 0) ?  pressure :  0;
+
+float ProbeSampler::getPressure(float pressure_input_voltage) {
+    return calculate(pressure_input_voltage, CFG_PRESSURE_CONVERSION_FACTOR_A, CFG_PRESSURE_CONVERSION_FACTOR_B);
 }
 
 void ProbeSampler::readAllSensors( SampleData & data ) {
@@ -121,8 +114,10 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
     data.tds_voltage = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
     data.tds = getTDS(data.tds_voltage);
     data.conductivity = getConductivity(data.tds_voltage);
-    data.ph = getPH(getAnalogInputVoltage(PH_SENSOR_INPUT_PIN));
-    data.do2 = getDO(getAnalogInputVoltage(DO_SENSOR_INPUT_PIN));
+    data.ph_voltage = getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
+    data.ph = getPH(data.ph_voltage);
+    data.do2_voltage = getAnalogInputVoltage(DO_SENSOR_INPUT_PIN);
+    data.do2 = getDO(data.do2_voltage);
 }
 
 ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples) {
@@ -145,7 +140,9 @@ ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples
         accumulatedData->tds += data.tds;
         accumulatedData->tds_voltage += data.tds_voltage;
         accumulatedData->conductivity += data.conductivity;
+        accumulatedData->ph_voltage += data.ph_voltage;
         accumulatedData->ph += data.ph;
+        accumulatedData->do2_voltage += data.do2_voltage;
         accumulatedData->do2 += data.do2;
         delayMsec( 10 );                               // delay 10ms between each sample
     }
@@ -155,7 +152,9 @@ ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples
     accumulatedData->tds /= numSamples;
     accumulatedData->tds_voltage /= numSamples;
     accumulatedData->conductivity /= numSamples;
+    accumulatedData->ph_voltage /= numSamples;
     accumulatedData->ph /= numSamples;
+    accumulatedData->do2_voltage /= numSamples;
     accumulatedData->do2 /= numSamples;
 
     // print out the temperature values to string stream
@@ -267,8 +266,11 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     std::to_string(data->tds) + "ppm, " +
     std::to_string(data->tds_voltage) + "v\nConductivity: " +
     std::to_string(data->conductivity) + "uS/cm\nPh: " +
-    std::to_string(data->ph) + "\nDO2: " +
-    std::to_string(data->do2) + "TBD\n" +
+    std::to_string(data->ph) + "pH, " +
+    std::to_string(data->ph_voltage) + "v\nDO: " +
+    std::to_string(data->do2) + "TBD, " +
+    std::to_string(data->do2_voltage) + "v\n" +
+
     std::to_string( counter ) + "\n\n";
 }
 
