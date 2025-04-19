@@ -1,28 +1,36 @@
-#ifndef SENSORS_SENSOR_H
-#define SENSORS_SENSOR_H
+#ifndef SENSOR_H
+#define SENSOR_H
 
-#include <iomanip>
-#include <sstream>
-#include "CCalibrationConfigHelper.h"
+#include "ISensor.h"
+#include "IStorageService.h"
 
-class Sensor {
+class OneWire;
+class DallasTemperature;
+
+class Sensor : public ISensor
+{
+public:
+    /// @brief Constructor
+    Sensor();
+
+    /// @brief Virtual destructor
+    virtual ~Sensor();
+
+    float getAnalogInputVoltage (int inputPin);
+    float getValue (float input_voltage, float factorA, float factorB); // Updated method
+
 private:
-float calculateFromVoltage(float input_voltage, const std::string &factorAKey, const std::string &factorBKey);
-    // Constants for voltage reference and ADC resolution
-    static constexpr int REF_VOLTAGE = 5; // Reference voltage in volts
-    static constexpr int ADC_COMPENSATION = 1; // Compensation factor for ADC
-    static constexpr int ADC_RESOLUTION = 4096; // ADC resolution (12-bit)
+    // ISampler interface
+
+    /// @brief Initialize sampler, must be called before first call to getSample()
+    ///        After this call sampler considered ready to provide samples
+    /// @return true if initialization successful, false otherwise
+    virtual bool init( const CalibrationConfig & config ) override;
+
+private:
+
     static const char * TAG;
 
-    std::string mFactorAKey; // Calibration key for factor A
-    std::string mFactorBKey; // Calibration key for factor B
-    CCalibrationConfigHelper::Ptr mConfigHelper;        ///< Calibration configuration helper
-
-public:
-
-    Sensor(const std::string &factorAKey, const std::string &factorBKey); // Constructor
-    float getAnalogInputVoltage(int inputPin);
-    float getSensorReading(float input_voltage);
 };
 
-#endif  // SENSORS_SENSOR_H
+#endif // SENSOR_H

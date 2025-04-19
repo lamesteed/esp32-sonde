@@ -53,13 +53,7 @@ private:
     };
 
     float getTemperatureInCelsius();
-    float getAnalogInputVoltage (int inputPin);
-    float calculate(float input_voltage, const std::string &factorAKey, const std::string &factorBKey);
-    float getTDS (float tds_input_voltage);
-    float getPH (float ph_input_voltage);
-    float getDO (float do_input_voltage);
     float getConductivity (float tds_input_voltage);
-    float getPressure (float pressure_input_voltage);
     void readAllSensors( SampleData & data );
     std::string twoDecimalString(float value);
     std::string writeSampleDataInTestingMode (const SampleData::Ptr & data, int counter);

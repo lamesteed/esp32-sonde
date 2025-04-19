@@ -1,57 +1,50 @@
-// #include "sensor.h"
-// #include "esp_log.h"
+#include "Sensor.h"
+#include "DatasetFields.h"
+#include "CSystemTimeService.h"
+#include "esp_log.h"
+#include "delay.h"
+#include <Arduino.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
-// #include "CCalibrationConfigHelper.h"
+#include <iomanip>
+#include <sstream>
 
-// #include <Arduino.h>
-// #include <OneWire.h>
+#define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
+#define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
+#define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
+#define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
+#define DO_SENSOR_INPUT_PIN       27        // pin GPIO27 to DO sensor
+#define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
+#define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
+#define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
-// #include <iomanip>
-// #include <sstream>
+float ADC_COMPENSATION = 1;                 // 0dB attenuation
 
-// const char * Sensor::TAG = "Sensor";
+const char * Sensor::TAG = "Sensor";
 
-// Sensor::Sensor(const std::string &factorAKey, const std::string &factorBKey)
-//     : mFactorAKey(factorAKey), mFactorBKey(factorBKey),mConfigHelper() {
-//         ESP_LOGI( TAG, "Instance created" );
-//     }
+Sensor::Sensor()
+{
+    ESP_LOGI(TAG, "Instance created");
+}
 
-    
-// float Sensor::getAnalogInputVoltage (int inputPin) {
-//     // Calculate the volts per division taking account of the chosen attenuation value.
-//     float input = analogRead(inputPin);
-//     return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
-// }
+float Sensor::getAnalogInputVoltage(int inputPin) {
+    // Calculate the volts per division taking account of the chosen attenuation value.
+    float input = analogRead(inputPin);
+    return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
+}
 
-// float Sensor::calculateFromVoltage(float input_voltage, const std::string &factorAKey, const std::string &factorBKey) {
-//     float k = mConfigHelper.getAsFloat(factorAKey);
-//     float b = mConfigHelper.getAsFloat(factorBKey);
-//     // result = k * V + b
-//     float result = k * input_voltage + b;
-//     return (result > 0) ? result : 0;
-// }
+float Sensor::getValue(float input_voltage, float factorA, float factorB) {
+    // Perform the calculation using the provided factors
+    float result = factorA * input_voltage + factorB;
+    return (result > 0) ? result : 0;
+}
 
-// float Sensor::getSensorReading(float input_voltage) {
-//     return Sensor::calculateFromVoltage(input_voltage, mFactorAKey, mFactorAKey);
-// }
+Sensor::~Sensor() {
+    ESP_LOGI(TAG, "Instance destroyed");
+}
 
-// Sensor::~Sensor()
-// {
-//     ESP_LOGI( TAG, "Instance destroyed" );
-// }
+bool Sensor::init( const CalibrationConfig & config ) {
 
-// bool Sensor::init( const CalibrationConfig & config ) {
-//     ESP_LOGI( TAG, "Initializing ..." );
-//     mConfigHelper = std::make_shared<CCalibrationConfigHelper>( config, mCalibrationParameters );
-//     // Iterate through expected calibration parameters and print values that will be used for sampling
-//     ESP_LOGI( TAG, "Calibration parameters that will be applied:" );
-//     for ( auto & param : mCalibrationParameters )
-//     {
-//         ESP_LOGI( TAG, "%s = %s", param.first.c_str(), mConfigHelper->getAsString( param.first ).c_str() );
-//     }
-
-//     mTempSensorPtr->begin();                             // initialize temperature sensor
-//     delayMsec( 1000 );
-//     ESP_LOGI( TAG, "Initializing complete, ready to sample" );
-//     return true;
-// }
+    return true;
+}

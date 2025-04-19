@@ -3,6 +3,7 @@
 #include "CSystemTimeService.h"
 #include "esp_log.h"
 #include "delay.h"
+#include "Sensor.h"
 #include <Arduino.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -19,9 +20,8 @@
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
-float ADC_COMPENSATION = 1;                 // 0dB attenuation
 std::vector<DatasetFields::Ptr> datasets;
-
+Sensor analog_sensor;
 const char * ProbeSampler::TAG = "ProbeSampler";
 
 const char * ProbeSampler::CFG_NUMBER_OF_SAMPLES            = "NUMBER_OF_SAMPLES";
@@ -66,61 +66,35 @@ float ProbeSampler::getTemperatureInCelsius () {
     return mTempSensorPtr->getTempCByIndex(0);  // Read temperature in °C
 }
 
-float ProbeSampler::getAnalogInputVoltage (int inputPin) {
-    // Calculate the volts per division taking account of the chosen attenuation value.
-    float input = analogRead(inputPin);
-    return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
-}
-
-float ProbeSampler::calculate(float input_voltage, const std::string &factorAKey, const std::string &factorBKey) {
-    float k = mConfigHelper->getAsFloat(factorAKey);
-    float b = mConfigHelper->getAsFloat(factorBKey);
-    float result = k * input_voltage + b;
-    return (result > 0) ? result : 0;
-}
-
-float ProbeSampler::getTDS(float tds_input_voltage) {
-    return calculate(tds_input_voltage, CFG_TDS_CONVERSION_FACTOR_A, CFG_TDS_CONVERSION_FACTOR_B);
-}
-
 float ProbeSampler::getConductivity (float tds_input_voltage) {
     /* Conductivity = TDS * conversion factor, where
         0.65 - general purpose
         0.5  - sea water
         0.7  - drinking water
         0.8  - hydroponics */
-    float conductivity = getTDS(tds_input_voltage)/0.7; // assuming 0.7 conversion factor
+    float conductivity = analog_sensor.getValue(tds_input_voltage, mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_B))/0.7; // assuming 0.7 conversion factor
     return (conductivity > 0) ? conductivity : 0;
-}
-
-float ProbeSampler::getPH(float ph_input_voltage) {
-    return calculate(ph_input_voltage, CFG_PH_CONVERSION_FACTOR_A, CFG_PH_CONVERSION_FACTOR_B);
-}
-
-float ProbeSampler::getDO(float do_input_voltage) {
-    return calculate(do_input_voltage, CFG_DO_CONVERSION_FACTOR_A, CFG_DO_CONVERSION_FACTOR_B);
-}
-
-float ProbeSampler::getPressure(float pressure_input_voltage) {
-    return calculate(pressure_input_voltage, CFG_PRESSURE_CONVERSION_FACTOR_A, CFG_PRESSURE_CONVERSION_FACTOR_B);
 }
 
 void ProbeSampler::readAllSensors( SampleData & data ) {
     Serial.println("Reading sensors...");
 
     data.temperature = getTemperatureInCelsius();
-    data.pressure_voltage = getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
-    data.pressure = getPressure(data.pressure_voltage);
-    data.tds_voltage = getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
-    data.tds = getTDS(data.tds_voltage);
+    data.pressure_voltage = analog_sensor.getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
+    data.pressure = analog_sensor.getValue(data.pressure_voltage, mConfigHelper->getAsFloat(CFG_PRESSURE_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PRESSURE_CONVERSION_FACTOR_B));
+    data.tds_voltage = analog_sensor.getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
+    data.tds = analog_sensor.getValue(data.tds_voltage, mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_B));
     data.conductivity = getConductivity(data.tds_voltage);
-    data.ph_voltage = getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
-    data.ph = getPH(data.ph_voltage);
-    data.do2_voltage = getAnalogInputVoltage(DO_SENSOR_INPUT_PIN);
-    data.do2 = getDO(data.do2_voltage);
+    data.ph_voltage = analog_sensor.getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
+    data.ph = analog_sensor.getValue(data.ph_voltage, mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_B));
+    data.do2_voltage = analog_sensor.getAnalogInputVoltage(DO_SENSOR_INPUT_PIN);
+    data.do2 = analog_sensor.getValue(data.do2_voltage, mConfigHelper->getAsFloat(CFG_DO_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_DO_CONVERSION_FACTOR_B));
+
 }
 
 ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples) {
+    ESP_LOGI( "Entered writeSampleDataInTestingMode", "numSamples = %d", numSamples );
+
     SampleData::Ptr accumulatedData = std::make_shared<SampleData>();
     accumulatedData->temperature = -127; // initialize to minimal possible value
 
@@ -169,6 +143,8 @@ ProbeSampler::SampleData::Ptr ProbeSampler::averageSensorReadings(int numSamples
 
 std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & data, int counter)
 {
+    ESP_LOGI( "Entered writeSampleDataInTestingMode", "counter = %d", counter );
+
     static const std::string temperatureUnit = "deg C";
     static const std::string pressureUnit = "psi";
     static const std::string tdsUnit = "ppm";
