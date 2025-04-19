@@ -10,11 +10,6 @@
 #include <iomanip>
 #include <sstream>
 
-#define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
-#define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
-#define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
-#define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
-#define DO_SENSOR_INPUT_PIN       27        // pin GPIO27 to DO sensor
 #define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
 #define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution

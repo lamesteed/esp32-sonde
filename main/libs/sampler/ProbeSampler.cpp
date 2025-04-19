@@ -16,9 +16,6 @@
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
 #define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
 #define DO_SENSOR_INPUT_PIN       27        // pin GPIO27 to DO sensor
-#define REF_VOLTAGE               5         // Maximum voltage expected at IO pins
-#define BASELINE_VOLTAGE          0.5       // measured minimum voltage read from sensors
-#define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 
 std::vector<DatasetFields::Ptr> datasets;
 Sensor analog_sensor;
