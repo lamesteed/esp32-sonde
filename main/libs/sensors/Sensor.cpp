@@ -1,12 +1,7 @@
 #include "Sensor.h"
-#include "DatasetFields.h"
-#include "CSystemTimeService.h"
 #include "esp_log.h"
 #include "delay.h"
 #include <Arduino.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
-
 #include <iomanip>
 #include <sstream>
 
@@ -18,19 +13,16 @@ float ADC_COMPENSATION = 1;                 // 0dB attenuation
 
 const char * Sensor::TAG = "Sensor";
 
-Sensor::Sensor()
-{
+Sensor::Sensor() {
     ESP_LOGI(TAG, "Instance created");
 }
 
 float Sensor::getAnalogInputVoltage(int inputPin) {
-    // Calculate the volts per division taking account of the chosen attenuation value.
     float input = analogRead(inputPin);
     return input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
 }
 
 float Sensor::getValue(float input_voltage, float factorA, float factorB) {
-    // Perform the calculation using the provided factors
     float result = factorA * input_voltage + factorB;
     return (result > 0) ? result : 0;
 }
@@ -39,7 +31,6 @@ Sensor::~Sensor() {
     ESP_LOGI(TAG, "Instance destroyed");
 }
 
-bool Sensor::init( const CalibrationConfig & config ) {
-
+bool Sensor::init() {
     return true;
 }

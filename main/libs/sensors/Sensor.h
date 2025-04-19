@@ -2,7 +2,6 @@
 #define SENSOR_H
 
 #include "ISensor.h"
-#include "IStorageService.h"
 
 class OneWire;
 class DallasTemperature;
@@ -25,7 +24,7 @@ private:
     /// @brief Initialize sampler, must be called before first call to getSample()
     ///        After this call sampler considered ready to provide samples
     /// @return true if initialization successful, false otherwise
-    virtual bool init( const CalibrationConfig & config ) override;
+    virtual bool init() override;
 
 private:
 

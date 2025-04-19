@@ -4,7 +4,6 @@
 #include "esp_log.h"
 #include "delay.h"
 #include "Sensor.h"
-#include <Arduino.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 

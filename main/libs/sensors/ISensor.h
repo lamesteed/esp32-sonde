@@ -23,7 +23,7 @@ public:
     virtual ~ISensor() = default;
 
     /// @brief Initialize sampler
-    virtual bool init( const CalibrationConfig & config ) = 0;
+    virtual bool init() = 0;
 
 };
 
