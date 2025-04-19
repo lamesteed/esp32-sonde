@@ -218,7 +218,7 @@ std::string ProbeSampler::writeSampleDataInTestingMode (const SampleData::Ptr & 
     DatasetFields::Ptr doRow( new DatasetFields( { datasetName, monitoringLocationID, monitoringLocationName
         , monitoringLocationLatitude, monitoringLocationLongitude, "GPS", "0", doUnit
         , "Lake/Pond", "Field Msr/Obs-Portable Data Logger", "Surface Water", "","","",""
-        , "0", "m", "Probe/Sensor", "mg/l",           "", "", "0", doUnit,   "Actual"
+        , "0", "m", "Probe/Sensor", "dissolved Oxygen",           "", "", "0", doUnit,   "Actual"
         , "", "", "", "", "", "", "", "", "", "", "", "", "", "" } ) );
     doRow->ActivityStartDate = timeService.GetTimeAsString("%Y-%m-%d");
     doRow->ActivityStartTime = timeService.GetTimeAsString("%H:%M:%S");
