@@ -7,6 +7,7 @@
 #include "CGetFileCommand.h"
 #include "CStoreFileCommand.h"
 #include "CSetTimeCommand.h"
+#include "CFieldModeCommand.h"
 #include "esp_log.h"
 
 // constants definition
@@ -82,11 +83,14 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
         // create and execute set time command
         cmd = std::make_shared<CSetTimeCommand>( mPublisher, mTimeService, cmdArgs );
     }
-    /* else if ( !command.compare( CMD_FIELDMODE ) )
+    else if ( !command.compare( CMD_FIELDMODE ) )
     {
+        //expect arguments for this command
+        ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
+        // create and execute set time command
         // create and execute field mode command
-        cmd = std::make_shared<CFieldModeCommand>( mPublisher, mSampler );
-    }*/
+        cmd = std::make_shared<CFieldModeCommand>( mSampler, mSerializer, mStorageService, mPublisher, cmdArgs );
+    }
     else
     {
         ESP_LOGE( TAG, "onCommandReceived() - unknown command: %s", command.c_str() );

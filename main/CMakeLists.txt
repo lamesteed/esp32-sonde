@@ -12,6 +12,7 @@ idf_component_register(
     SRCS "libs/command/CGetFileCommand.cpp"
     SRCS "libs/command/CStoreFileCommand.cpp"
     SRCS "libs/command/CSetTimeCommand.cpp"
+    SRCS "libs/command/CFieldModeCommand.cpp"
     SRCS "libs/storage/CStorageService.cpp"
     SRCS "libs/storage/CMemoryStorageService.cpp"
     SRCS "libs/time/CSystemTimeService.cpp"
