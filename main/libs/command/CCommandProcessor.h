@@ -3,6 +3,7 @@
 
 #include "ICommandListener.h"
 #include "ISampler.h"
+#include "ISampleSerializer.h"
 #include "IDataPublisherService.h"
 #include "IRebootable.h"
 #include "IStorageService.h"
@@ -19,12 +20,14 @@ class CCommandProcessor : public ICommandListener
 public:
     /// @brief Default constructor
     /// @param sampler        Sampler instance
+    /// @param serializer     Sample serializer instance
     /// @param publisher      Data publisher instance
     /// @param rebootable     Rebootable instance
     /// @param storageService Storage service instance
     /// @param timeService    Time service instance
     CCommandProcessor(
         const ISampler::Ptr & sampler,
+        const ISampleSerializer::Ptr & serializer,
         const IDataPublisherService::Ptr & publisher,
         const IRebootable::Ptr & rebootable,
         const IStorageService::Ptr & storageService,
@@ -51,6 +54,7 @@ private:
     static const char * CMD_GETFILE;        ///< Command name for get file
     static const char * CMD_STOREFILE;      ///< Command name for store file
     static const char * CMD_SETTIME;        ///< Command name for set time
+    static const char * CMD_FIELDMODE;      ///< Command name for field mode
 
     /// @brief Static helper to parse string arguments into key-value map
     /// @param args string argument of "k1=v1,k2=v2,..." format
@@ -58,6 +62,7 @@ private:
     static ICommand::CommandArgs parseArgs( const std::string & args );
 
     ISampler::Ptr mSampler;                 ///< Sampler instance
+    ISampleSerializer::Ptr mSerializer;     ///< Sample serializer instance
     IDataPublisherService::Ptr mPublisher;  ///< Data publisher instance
     IRebootable::Ptr mRebootable;           ///< Rebootable instance
     IStorageService::Ptr mStorageService;   ///< Storage service instance

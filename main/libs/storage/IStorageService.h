@@ -21,6 +21,7 @@ public:
     virtual bool listFiles( FileList & outFiles ) = 0;
     virtual bool readData( const std::string & filename, std::string & outData ) = 0;
     virtual bool storeData( const std::string & filename, const std::string & inData) = 0;
+    virtual bool appendData( const std::string & filename, const std::string & inData) = 0;
 };
 
 #endif // ISTORAGESERVICE_H

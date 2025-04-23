@@ -17,14 +17,17 @@ const char * CCommandProcessor::CMD_LISTFILES = "LISTFILES";
 const char * CCommandProcessor::CMD_GETFILE = "GETFILE";
 const char * CCommandProcessor::CMD_STOREFILE = "STOREFILE";
 const char * CCommandProcessor::CMD_SETTIME = "SETTIME";
+const char * CCommandProcessor::CMD_FIELDMODE = "FIELDMODE";
 
 CCommandProcessor::CCommandProcessor(
     const ISampler::Ptr & sampler,
+    const ISampleSerializer::Ptr & serializer,
     const IDataPublisherService::Ptr & publisher,
     const IRebootable::Ptr & rebootable,
     const IStorageService::Ptr & storageService,
     const ITimeService::Ptr & timeService )
         : mSampler( sampler )
+        , mSerializer( serializer )
         , mPublisher( publisher )
         , mRebootable( rebootable )
         , mStorageService( storageService )
@@ -51,7 +54,7 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     {
         // create and execute test mode command
         static const int SAMPLES_COUNT = 5;
-        cmd = std::make_shared<CTestModeCommand>( mSampler, mPublisher, mStorageService, SAMPLES_COUNT );
+        cmd = std::make_shared<CTestModeCommand>( mSampler, mSerializer, mStorageService, mPublisher, SAMPLES_COUNT );
     } else if ( !command.compare( CMD_REBOOT ) )
     {
         // create and execute reboot command
@@ -79,6 +82,11 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
         // create and execute set time command
         cmd = std::make_shared<CSetTimeCommand>( mPublisher, mTimeService, cmdArgs );
     }
+    /* else if ( !command.compare( CMD_FIELDMODE ) )
+    {
+        // create and execute field mode command
+        cmd = std::make_shared<CFieldModeCommand>( mPublisher, mSampler );
+    }*/
     else
     {
         ESP_LOGE( TAG, "onCommandReceived() - unknown command: %s", command.c_str() );

@@ -10,15 +10,16 @@
 
 CTestModeCommand::CTestModeCommand(
     const ISampler::Ptr & sampler,
-    const IDataPublisherService::Ptr & publisher,
+    const ISampleSerializer::Ptr & serializer,
     const IStorageService::Ptr & storage,
+    const IDataPublisherService::Ptr & publisher,
     int samplesCount )
         : mSampler( sampler )
-        , mPublisher( publisher )
+        , mSerializer( serializer )
         , mStorageService( storage )
+        , mPublisher( publisher )
         , mSamplesCount( samplesCount )
 {
-
 }
 
 std::string CTestModeCommand::getDescription() const
@@ -27,16 +28,15 @@ std::string CTestModeCommand::getDescription() const
     return "TESTMODE: samplesCount=" + std::to_string( mSamplesCount );
 }
 
-bool CTestModeCommand::execute()
+std::map<std::string, std::string> CTestModeCommand::readConfig( const std::string & filename ) const
 {
     // retrieve configuration parameters from storage
+    std::map<std::string, std::string> config;
     std::string configData;
-    if ( !mStorageService->readData( "sampler.cfg", configData ) )
+    if ( !mStorageService->readData( filename, configData ) )
     {
-        mPublisher->publishData( "Failed to read configuration data", true );
-        return false;
+        return config;
     }
-    ISampler::CalibrationConfig config;
 
     // parse configuration parameters stored in key=value format, drop any spaces in key or value
     std::istringstream iss( configData );
@@ -55,10 +55,26 @@ bool CTestModeCommand::execute()
         config[key] = value;
     }
 
-    // create filename for output data using current time in format YYYYMMDD_HHMMSS
-    CSystemTimeService timeService; 
-    std::string filename = "output_" + timeService.GetTimeAsString("%Y-%m-%d_%H%M%S") + ".csv";
-    config["FILENAME"] = filename;
+    return config;
+}
+
+
+bool CTestModeCommand::execute()
+{
+    // retrieve sampler configuration parameters from storage
+    ISampler::CalibrationConfig config = readConfig( "sampler.cfg" );
+    if ( config.empty() )
+    {
+        mPublisher->publishData( "Failed to read sampler configuration", true );
+        return false;
+    }
+    //retrieve metadata configuration parameters from storage
+    ISampleSerializer::MetadataConfig metadata = readConfig( "metadata.cfg" );
+    if ( metadata.empty() )
+    {
+        mPublisher->publishData( "Failed to read metadata configuration", true );
+        return false;
+    }
 
     // initialize sampler
     if ( !mSampler->init( config ) )
@@ -67,22 +83,59 @@ bool CTestModeCommand::execute()
         return false;
     }
 
-    // collect samples mSampleCount times and publish each sample
+    // reset serializer
+    mSerializer->reset( metadata );
+
+    // store serialized sample to storage
+    std::string filename = "testmode.csv";
+
+    // collect samples mSampleCount times
     for ( int i = 0; i < mSamplesCount; i++ )
     {
-        std::string sample = mSampler->getSample();
-        if ( sample.empty() )
+        // get next sample
+        SampleData::Ptr sample = mSampler->getSample();
+
+        // serialize sample
+        std::ostringstream oss;
+        if ( !mSerializer->serialize( sample, oss ) )
         {
-            mPublisher->publishData( "Failed to get next sample", true );
+            mPublisher->publishData( "Failed to serialize sample", true );
             return false;
         }
 
-        bool sendEOD = ( i == mSamplesCount - 1 );
-
-        if ( !mPublisher->publishData( sample, sendEOD ) )
+        if (i == 0)
         {
-            return false;
+            // For the first sample - re-create file
+            if ( !mStorageService->storeData( filename, oss.str() ) )
+            {
+                mPublisher->publishData( "Failed to store fiile", true );
+                return false;
+            }
+        }
+        else
+        {
+            // append next sample to file
+            if ( !mStorageService->appendData( filename, oss.str() ) )
+            {
+                mPublisher->publishData( "Failed to store fiile", true );
+                return false;
+            }
         }
     }
+
+    // read file from storage and publish it
+    std::string fileData;
+    if ( !mStorageService->readData( filename, fileData ) )
+    {
+        mPublisher->publishData( "Failed to read file", true );
+        return false;
+    }
+
+    if ( !mPublisher->publishData( fileData, true ) )
+    {
+        mPublisher->publishData( "Failed to publish file", true );
+        return false;
+    }
+
     return true;
 }

@@ -19,6 +19,7 @@ private:
     virtual bool listFiles( FileList & outFiles ) override;
     virtual bool readData( const std::string & filename, std::string & outData ) override;
     virtual bool storeData( const std::string & filename, const std::string & inData) override;
+    virtual bool appendData( const std::string & filename, const std::string & inData) override;
 
 private:
     static const char * TAG; ///< Logger tag

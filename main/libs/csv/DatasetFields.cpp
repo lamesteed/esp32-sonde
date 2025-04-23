@@ -44,9 +44,8 @@ void DatasetFields::toCSV( std::ostringstream & oss, const DatasetFields::Ptr & 
         << "\n";
 }
 
-void DatasetFields::saveToCSV(const IStorageService::Ptr & storage, const DatasetFields::ListPtr & datasets, const std::string & filename)
+void DatasetFields::writeCsvHeader( std::ostringstream & oss )
 {
-    std::ostringstream oss;
     // Write header
     oss << "DatasetName,MonitoringLocationID,MonitoringLocationName,"
         << "MonitoringLocationLatitude,MonitoringLocationLongitude,"
@@ -65,12 +64,4 @@ void DatasetFields::saveToCSV(const IStorageService::Ptr & storage, const Datase
         << "AnalysisStartDate,"
         << "AnalysisStartTime,AnalysisEndTimeZone,LaboratoryName,LaboratorySampleID"
         << "\n";
-
-    // Write data fields
-    for (const auto & dataset : datasets ) {
-       toCSV( oss, dataset );
-    }
-
-    // Store the CSV data in the storage service
-    storage->storeData( filename, oss.str() );
 }

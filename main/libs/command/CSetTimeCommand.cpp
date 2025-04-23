@@ -52,7 +52,7 @@ bool CSetTimeCommand::execute()
     }
 
     // set system time
-    bool success = mTimeService->SetTime( timestamp );
+    bool success = mTimeService->setTime( timestamp );
     if ( !success )
     {
         mPublisher->publishData( "Failed", true );
@@ -60,5 +60,5 @@ bool CSetTimeCommand::execute()
     }
 
     // publish data to client
-    return mPublisher->publishData( "System time set to: " + mTimeService->GetTimeAsString(), true );
+    return mPublisher->publishData( "System time set to: " + mTimeService->getTimeAsString(), true );
 }

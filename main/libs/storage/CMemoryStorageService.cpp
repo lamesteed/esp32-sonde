@@ -30,21 +30,38 @@ bool CMemoryStorageService::start()
 
         // Initialize in-memory storage
 
-        // Generatate sampler.cfg calibration config file content
-        // use sstream to generate multiline key-value pairs
-        std::ostringstream oss;
-        oss << "NUMBER_OF_SAMPLES=10" << std::endl;
-        oss << "TDS_CONVERSION_FACTOR_A=434.8" << std::endl;
-        oss << "TDS_CONVERSION_FACTOR_B=0" << std::endl;
-        oss << "PRESSURE_CONVERSION_FACTOR_A=25" << std::endl;
-        oss << "PRESSURE_CONVERSION_FACTOR_B=-12.5" << std::endl;
-        oss << "PH_CONVERSION_FACTOR_A=1" << std::endl;
-        oss << "PH_CONVERSION_FACTOR_B=0" << std::endl;
-        oss << "DO_CONVERSION_FACTOR_A=1" << std::endl;
-        oss << "DO_CONVERSION_FACTOR_B=0" << std::endl;
         {
+            // Generatate sampler.cfg calibration config file content
+            // use sstream to generate multiline key-value pairs
+            std::ostringstream oss;
+            oss << "NUMBER_OF_SAMPLES=10" << std::endl;
+            oss << "TDS_CONVERSION_FACTOR_A=434.8" << std::endl;
+            oss << "TDS_CONVERSION_FACTOR_B=0" << std::endl;
+            oss << "PRESSURE_CONVERSION_FACTOR_A=25" << std::endl;
+            oss << "PRESSURE_CONVERSION_FACTOR_B=-12.5" << std::endl;
+            oss << "PH_CONVERSION_FACTOR_A=1" << std::endl;
+            oss << "PH_CONVERSION_FACTOR_B=0" << std::endl;
+            oss << "DO_CONVERSION_FACTOR_A=1" << std::endl;
+            oss << "DO_CONVERSION_FACTOR_B=0" << std::endl;
             std::lock_guard<std::mutex> lock( mStorageMutex );
             mStorage["sampler.cfg" ] = oss.str();
+        }
+
+        {
+            // Generatate metadata.cfg calibration config file content
+            // use sstream to generate multiline key-value pairs
+            std::ostringstream oss;
+            oss << "DATASET_NAME=UNKNOWN" << std::endl;
+            oss << "LOCATION_ID=UNKNOWN_LOCATION_ID" << std::endl;
+            oss << "LOCATION_NAME=UNKNOWN_LOCATION_NAME" << std::endl;
+            oss << "LOCATION_TYPE=Lake/Pond" << std::endl;
+            oss << "GPS_LATITUDE=0.0" << std::endl;
+            oss << "GPS_LONGITUDE=0.0" << std::endl;
+            oss << "GPS_ACCURACY=10.0" << std::endl;
+            oss << "GPS_ACCURACY_UNIT=m" << std::endl;
+            oss << "GPS_SYSTEM_NAME=WGS84" << std::endl;
+            std::lock_guard<std::mutex> lock( mStorageMutex );
+            mStorage["metadata.cfg"] = oss.str();
         }
     }
 
@@ -114,6 +131,31 @@ bool CMemoryStorageService::storeData( const std::string & filename, const std::
         ESP_LOGI( TAG, "storeData() - storing data to file: %s", filename.c_str() );
         std::lock_guard<std::mutex> lock( mStorageMutex );
         mStorage[filename] = inData;
+        return true;
+    }
+}
+
+bool CMemoryStorageService::appendData( const std::string & filename, const std::string & inData )
+{
+    if ( mBypassMemoryStorage )
+    {
+        return mUnderlying->appendData( filename, inData );
+    }
+    else
+    {
+        ESP_LOGI( TAG, "appendData() - appending data to file: %s", filename.c_str() );
+        std::lock_guard<std::mutex> lock( mStorageMutex );
+        //try fetch data from memory, create new entry if not found or append to existing one if found
+        auto it = mStorage.find( filename );
+        if ( it != mStorage.end() )
+        {
+            it->second += "\n";
+            it->second += inData;
+        }
+        else
+        {
+            mStorage[filename] = inData;
+        }
         return true;
     }
 }

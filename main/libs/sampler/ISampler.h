@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <map>
+#include "SampleData.h"
 
 class ISampler
 {
@@ -26,9 +27,8 @@ public:
     virtual bool init( const CalibrationConfig & config ) = 0;
 
     /// @brief  Retrieve next sample from sensors
-    /// @return Sample data serialized to string,
-    ///         empty string if no more samples available in current cycle (surface reached)
-    virtual  std::string getSample() = 0;
+    /// @return Sample data
+    virtual  SampleData::Ptr getSample() = 0;
 };
 
 #endif // ISAMPLER_H

@@ -16,6 +16,8 @@ idf_component_register(
     SRCS "libs/storage/CMemoryStorageService.cpp"
     SRCS "libs/time/CSystemTimeService.cpp"
     SRCS "libs/csv/DatasetFields.cpp"
+    SRCS "libs/csv/CCsvSerializer.cpp"
+    SRCS "libs/csv/ISampleSerializer.cpp"
     SRCS "libs/sensors/Sensor.cpp"
     INCLUDE_DIRS ""
     INCLUDE_DIRS "libs"

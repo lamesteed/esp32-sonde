@@ -23,7 +23,7 @@ private:
     /// @brief  Retrieve next sample from sensors
     /// @return Sample data serialized to satring,
     ///         empty string if no more samples available in current cycle (surface reached)
-    virtual  std::string getSample() override;
+    virtual  SampleData::Ptr getSample() override;
 };
 
 #endif // CDUMMYSAMPLER_H

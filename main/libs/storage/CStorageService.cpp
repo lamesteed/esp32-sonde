@@ -232,3 +232,40 @@ bool CStorageService::storeData( const std::string & filename, const std::string
     file.close();
     return true;
 }
+
+bool CStorageService::appendData( const std::string & filename, const std::string & inData )
+{
+    ESP_LOGI( TAG, "appendData() - appending data to file: %s", filename.c_str() );
+
+    if ( !mInitialized )
+    {
+        ESP_LOGE( TAG, "appendData() - service not initialized" );
+        return false;
+    }
+
+    // construct filename (concatenate directory and filename)
+    std::string fullFilename = SENTRY226_DIR;
+    fullFilename += "/";
+    fullFilename += filename;
+
+    // open file for appending
+    File file = SD_MMC.open( fullFilename.c_str(), FILE_APPEND );
+    if ( !file )
+    {
+        ESP_LOGE( TAG, "appendData() - failed to open file for appending" );
+        return false;
+    }
+
+    // write data to file
+    size_t bytesWritten = file.write( (const uint8_t *)inData.c_str(), inData.size() );
+    if ( bytesWritten != inData.size() )
+    {
+        ESP_LOGE( TAG, "appendData() - failed to append data to file" );
+        file.close();
+        return false;
+    }
+
+    // close file
+    file.close();
+    return true;
+}

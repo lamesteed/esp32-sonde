@@ -2,6 +2,7 @@
 #include "CSystemTimeService.h"
 #include "CBluetoothPublisherService.h"
 #include "ProbeSampler.h"
+#include "CCsvSerializer.h"
 #include "CStorageService.h"
 #include "CMemoryStorageService.h"
 #include "CCommandProcessor.h"
@@ -42,14 +43,17 @@ void CSondeApp::run()
     }
 
     // Create sampler instance
-    ISampler::Ptr sampler = std::make_shared<ProbeSampler>(storage);
+    ISampler::Ptr sampler = std::make_shared<ProbeSampler>(systime);
+
+    // CREATE CSV serializer
+    ISampleSerializer::Ptr serializer = std::make_shared<CCsvSerializer>( systime );
 
     // Safely create shared pointer to this object
     IRebootable::Ptr rebootable = shared_from_this();
 
 
     // Create command processor
-    CCommandProcessor processor( sampler, publisher, rebootable, storage, systime );
+    CCommandProcessor processor( sampler, serializer, publisher, rebootable, storage, systime );
 
     // Specify listener for incoming Bluetooth commands
     publisher->setNotificationListener( &processor );

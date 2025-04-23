@@ -3,6 +3,7 @@
 
 #include "ICommand.h"
 #include "ISampler.h"
+#include "ISampleSerializer.h"
 #include "IDataPublisherService.h"
 #include "IStorageService.h"
 
@@ -12,13 +13,15 @@ class CTestModeCommand : public ICommand
 public:
     /// @brief Constructor
     /// @param sampler      Sampler instance (to read sensor data)
-    /// @param publisher    Data publisher instance (to report execution result)
+    /// @param serializer   Sample serializer instance (to serialize data)
     /// @param storage      Storage service instance (to store data)
+    /// @param publisher    Data publisher instance (to report execution result)
     /// @param samplesCount Number of samples to collect
     CTestModeCommand(
         const ISampler::Ptr & sampler,
-        const IDataPublisherService::Ptr & publisher,
+        const ISampleSerializer::Ptr & serializer,
         const IStorageService::Ptr & storage,
+        const IDataPublisherService::Ptr & publisher,
         int samplesCount );
 
     /// @brief Virtual destructor
@@ -35,9 +38,13 @@ private:
     virtual bool execute() override;
 
 private:
+
+std::map<std::string, std::string> readConfig( const std::string & filename ) const;
+
     ISampler::Ptr mSampler;                 ///< Sampler instance
-    IDataPublisherService::Ptr mPublisher;  ///< Data publisher interface
+    ISampleSerializer::Ptr mSerializer;     ///< Sample serializer instance
     IStorageService::Ptr mStorageService;   ///< Storage service interface
+    IDataPublisherService::Ptr mPublisher;  ///< Data publisher interface
     int mSamplesCount;                      ///< Number of samples to collect
 };
 

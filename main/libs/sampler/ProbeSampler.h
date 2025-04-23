@@ -3,8 +3,8 @@
 #define PROBESAMPLER_H
 
 #include "ISampler.h"
-#include "IStorageService.h"
 #include "CCalibrationConfigHelper.h"
+#include "ITimeService.h"
 
 class OneWire;
 class DallasTemperature;
@@ -13,7 +13,7 @@ class ProbeSampler : public ISampler
 {
 public:
     /// @brief Constructor
-    ProbeSampler(const IStorageService::Ptr & storage);
+    ProbeSampler(const ITimeService::Ptr & timeService);
 
     /// @brief Virtual destructor
     virtual ~ProbeSampler();
@@ -27,36 +27,15 @@ private:
     virtual bool init( const CalibrationConfig & config ) override;
 
     /// @brief  Retrieve next sample from sensors
-    /// @return Sample data serialized to satring,
-    ///         empty string if no more samples available in current cycle (surface reached)
-    virtual  std::string getSample() override;
+    /// @return Sample data, nullptr if sampling failed
+    virtual  SampleData::Ptr getSample() override;
 
 private:
-    struct SampleData {
-        using Ptr = std::shared_ptr<SampleData>;
 
-        float temperature;
-        float pressure_voltage;
-        float pressure;
-        float tds_voltage;
-        float tds;
-        float conductivity;
-        float ph_voltage;
-        float ph;
-        float do2_voltage;
-        float do2;
-
-        SampleData() : temperature(0), pressure_voltage(0), pressure(0),
-                       tds_voltage(0), tds(0), conductivity(0), ph_voltage(0), ph(0), do2_voltage(0), do2(0)
-        {
-        }
-    };
 
     float getTemperatureInCelsius();
     float getConductivity (float tds_input_voltage);
     void readAllSensors( SampleData & data );
-    std::string twoDecimalString(float value);
-    std::string writeSampleDataInTestingMode (const SampleData::Ptr & data, int counter);
     SampleData::Ptr averageSensorReadings(int numSamples);
 
     static const char * TAG;
@@ -79,8 +58,7 @@ private:
     std::shared_ptr<OneWire> mOneWirePtr;               ///< OneWire instance
     std::shared_ptr<DallasTemperature> mTempSensorPtr;  ///< Temperature sensor instance
 
-    IStorageService::Ptr mStorage;
-    bool mTestMode; ///< Flag indicating if test mode is enabled
+    ITimeService::Ptr mTimeService;                     ///< Time service instance
 };
 
 #endif // PROBESAMPLER_H
