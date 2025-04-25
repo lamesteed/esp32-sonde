@@ -27,6 +27,7 @@ bool CPlainTextSerializer::serialize( const SampleData::Ptr & data, std::ostring
     oss << "Temperature: " << data->temperature << std::endl
     << "Pressure: " << data->pressure << std::endl
     << "Pressure voltage: " << data->pressure_voltage << std::endl
+    << "Depth: " << data->depth << std::endl
     << "TDS: " << data->tds << std::endl
     << "TDS voltage: " << data->tds_voltage << std::endl
     << "Conductivity: " << data->conductivity << std::endl
