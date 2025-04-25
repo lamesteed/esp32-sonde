@@ -123,25 +123,25 @@ bool CCsvSerializer::serialize( const SampleData::Ptr & data, std::ostringstream
     csvFields->ActivityDepthHeightMeasure = ISampleSerializer::toTwoDecimalString( data->depth );
 
     // Set temperature-related fields and serialize
-    csvFields->CharacteristicName = "Temperature, water";
+    csvFields->CharacteristicName = "\"Temperature, water\"";
     csvFields->ResultValue = ISampleSerializer::toTwoDecimalString( data->temperature );
     csvFields->ResultUnit = "deg C";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set pressure-related fields and serialize
-    csvFields->CharacteristicName = "Pressure";   //????
+    csvFields->CharacteristicName = "Pressure";
     csvFields->ResultValue = std::to_string( data->pressure );
     csvFields->ResultUnit = "psi";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set TDS-related fields and serialize
-    csvFields->CharacteristicName = "Total dissolved solids"; //????
+    csvFields->CharacteristicName = "Total dissolved solids";
     csvFields->ResultValue = std::to_string( data->tds );
     csvFields->ResultUnit = "ppm";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set conductivity-related fields and serialize
-    csvFields->CharacteristicName = "Conductivity"; //????
+    csvFields->CharacteristicName = "Conductivity";
     csvFields->ResultValue = std::to_string( data->conductivity );
     csvFields->ResultUnit = "uS/cm";
     DatasetFields::toCSV( oss, csvFields );
@@ -149,11 +149,11 @@ bool CCsvSerializer::serialize( const SampleData::Ptr & data, std::ostringstream
     // Set pH-related fields and serialize
     csvFields->CharacteristicName = "pH";
     csvFields->ResultValue = std::to_string( data->ph );
-    csvFields->ResultUnit = "pH";
+    csvFields->ResultUnit = "None";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set DO-related fields and serialize
-    csvFields->CharacteristicName = "Dissolved oxygen"; ///????
+    csvFields->CharacteristicName = "Dissolved oxygen (DO)";
     csvFields->ResultValue = std::to_string( data->do2 );
     csvFields->ResultUnit = "mg/l";
     DatasetFields::toCSV( oss, csvFields );
