@@ -21,6 +21,7 @@ public:
     /// @brief Default constructor
     /// @param sampler        Sampler instance
     /// @param serializer     Sample serializer instance
+    /// @param serializerTxt  Sample serializer instance for plain text
     /// @param publisher      Data publisher instance
     /// @param rebootable     Rebootable instance
     /// @param storageService Storage service instance
@@ -28,6 +29,7 @@ public:
     CCommandProcessor(
         const ISampler::Ptr & sampler,
         const ISampleSerializer::Ptr & serializer,
+        const ISampleSerializer::Ptr & serializerTxt,
         const IDataPublisherService::Ptr & publisher,
         const IRebootable::Ptr & rebootable,
         const IStorageService::Ptr & storageService,
@@ -63,6 +65,7 @@ private:
 
     ISampler::Ptr mSampler;                 ///< Sampler instance
     ISampleSerializer::Ptr mSerializer;     ///< Sample serializer instance
+    ISampleSerializer::Ptr mSerializerTxt;  ///< Sample serializer instance for plain text
     IDataPublisherService::Ptr mPublisher;  ///< Data publisher instance
     IRebootable::Ptr mRebootable;           ///< Rebootable instance
     IStorageService::Ptr mStorageService;   ///< Storage service instance

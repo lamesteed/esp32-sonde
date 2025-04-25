@@ -23,12 +23,14 @@ const char * CCommandProcessor::CMD_FIELDMODE = "FIELDMODE";
 CCommandProcessor::CCommandProcessor(
     const ISampler::Ptr & sampler,
     const ISampleSerializer::Ptr & serializer,
+    const ISampleSerializer::Ptr & serializerTxt,
     const IDataPublisherService::Ptr & publisher,
     const IRebootable::Ptr & rebootable,
     const IStorageService::Ptr & storageService,
     const ITimeService::Ptr & timeService )
         : mSampler( sampler )
         , mSerializer( serializer )
+        , mSerializerTxt( serializerTxt )
         , mPublisher( publisher )
         , mRebootable( rebootable )
         , mStorageService( storageService )
@@ -55,7 +57,7 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     {
         // create and execute test mode command
         static const int SAMPLES_COUNT = 5;
-        cmd = std::make_shared<CTestModeCommand>( mSampler, mSerializer, mStorageService, mPublisher, SAMPLES_COUNT );
+        cmd = std::make_shared<CTestModeCommand>( mSampler, mSerializerTxt, mStorageService, mPublisher, SAMPLES_COUNT );
     } else if ( !command.compare( CMD_REBOOT ) )
     {
         // create and execute reboot command
