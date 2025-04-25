@@ -23,23 +23,18 @@ CBluetoothPublisherService::CBluetoothPublisherService()
     , mNotifyCharacteristic( nullptr )
     , mRxCmdCharacteristic( nullptr )
     , mRxCmdArgsCharacteristic( nullptr )
-    , mNotifyDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
-    , mNotifyDescriptor2902( new BLE2902() )
-    , mRxDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
-    , mRxDescriptor2902( new BLE2902() )
-    , mRxArgsDescriptor2901( new BLEDescriptor( ( uint16_t ) 0x2901 ) )
-    , mRxArgsDescriptor2902( new BLE2902() )
+    , mNotifyDescriptor2901( nullptr )
+    , mNotifyDescriptor2902( nullptr )
+    , mRxDescriptor2901( nullptr )
+    , mRxDescriptor2902( nullptr )
+    , mRxArgsDescriptor2901( nullptr )
+    , mRxArgsDescriptor2902( nullptr )
     , mDeviceConnected( false )
     , mCurrentCommand()
     , mCurrentCommandArgs()
     , mMaxMtu( 23 ) // default, chunk size should be less than this by 3 bytes (ATT protocol overhead: 2 byte for attribute handle + 1 byte for opcode)
 {
     ESP_LOGI( TAG, "Instance created" );
-    // configure descriptors
-    mNotifyDescriptor2901->setValue( "Subscribe to get sonde command output" );
-    mNotifyDescriptor2902->setNotifications( true );
-    mRxDescriptor2901->setValue( "Write to initiate sonde command execution" );
-    mRxArgsDescriptor2901->setValue( "Write to specify sonde command arguments" );
 }
 
 CBluetoothPublisherService::~CBluetoothPublisherService()
@@ -71,8 +66,17 @@ void CBluetoothPublisherService::onDisconnect(BLEServer* pServer)
 
 void CBluetoothPublisherService::onMtuChanged(BLEServer *pServer, esp_ble_gatts_cb_param_t *param)
 {
-    ESP_LOGI(TAG, "MTU changed to %d", param->mtu.mtu);
-    mMaxMtu = param->mtu.mtu;
+    // if MTU is greater than 512, set it to 512 otherwise set to new MTU
+    if (param->mtu.mtu > 512)
+    {
+        mMaxMtu = 512;
+    }
+    else
+    {
+        mMaxMtu = param->mtu.mtu;
+    }
+
+    ESP_LOGI(TAG, "MTU changed to %d", mMaxMtu);
 }
 
 // BLEServerCallbacks interface implementation end
@@ -141,6 +145,20 @@ bool CBluetoothPublisherService::start()
         ESP_LOGE( TAG, "BLE service creation failed" );
         return false;
     }
+
+    // Create new descriptors instead of reusing existing ones
+    mNotifyDescriptor2901.reset(new BLEDescriptor((uint16_t)0x2901));
+    mNotifyDescriptor2902.reset(new BLE2902());
+    mRxDescriptor2901.reset(new BLEDescriptor((uint16_t)0x2901));
+    mRxDescriptor2902.reset(new BLE2902());
+    mRxArgsDescriptor2901.reset(new BLEDescriptor((uint16_t)0x2901));
+    mRxArgsDescriptor2902.reset(new BLE2902());
+
+    // Configure descriptors
+    mNotifyDescriptor2901->setValue("Subscribe to get sonde command output");
+    mNotifyDescriptor2902->setNotifications(true);
+    mRxDescriptor2901->setValue("Write to initiate sonde command execution");
+    mRxArgsDescriptor2901->setValue("Write to specify sonde command arguments");
 
     // Create Notify characteristic (is used to send command output to client)
     // Add 2901 and 2902 descriptors
@@ -221,6 +239,11 @@ bool CBluetoothPublisherService::stop()
         ESP_LOGI( TAG, "BLE not initialized" );
         return true;
     }
+
+    // Clear connection state
+    mDeviceConnected = false;
+    mCurrentCommand.clear();
+    mCurrentCommandArgs.clear();
 
     // stop advertising
     BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
