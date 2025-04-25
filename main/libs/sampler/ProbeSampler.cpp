@@ -33,7 +33,7 @@ ProbeSampler::ProbeSampler( const ITimeService::Ptr & timeService )
                                     { CFG_TDS_CONVERSION_FACTOR_B, "0" },
                                     { CFG_PRESSURE_CONVERSION_FACTOR_A, "25" },
                                     { CFG_PRESSURE_CONVERSION_FACTOR_B, "-12.5" },
-                                    { CFG_PH_CONVERSION_FACTOR_A, "1" },
+                                    { CFG_PH_CONVERSION_FACTOR_A, "-5.7" },
                                     { CFG_PH_CONVERSION_FACTOR_B, "0" },
                                     { CFG_DO_CONVERSION_FACTOR_A, "1" },
                                     { CFG_DO_CONVERSION_FACTOR_B, "0" },
