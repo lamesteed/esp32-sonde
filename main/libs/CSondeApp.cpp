@@ -1,13 +1,19 @@
 #include "CSondeApp.h"
 #include "CSystemTimeService.h"
 #include "CBluetoothPublisherService.h"
-#include "ProbeSampler.h"
 #include "CCsvSerializer.h"
 #include "CStorageService.h"
 #include "CMemoryStorageService.h"
 #include "CCommandProcessor.h"
-
 #include "esp_log.h"
+
+#define USE_DUMMY_SAMPLER 0
+
+#if USE_DUMMY_SAMPLER
+#include "CDummySampler.h"
+#else
+#include "ProbeSampler.h"
+#endif
 
 const char * CSondeApp::TAG = "CSondeApp";
 
@@ -43,7 +49,13 @@ void CSondeApp::run()
     }
 
     // Create sampler instance
-    ISampler::Ptr sampler = std::make_shared<ProbeSampler>(systime);
+#if USE_DUMMY_SAMPLER
+    ESP_LOGI( TAG, "Using dummy sampler" );
+    ISampler::Ptr sampler = std::make_shared<CDummySampler>( systime );
+#else
+    ESP_LOGI( TAG, "Using probe sampler" );
+    ISampler::Ptr sampler = std::make_shared<ProbeSampler>( systime );
+#endif
 
     // CREATE CSV serializer
     ISampleSerializer::Ptr serializer = std::make_shared<CCsvSerializer>( systime );

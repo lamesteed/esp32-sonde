@@ -2,12 +2,15 @@
 #define CDUMMYSAMPLER_H
 
 #include "ISampler.h"
+#include "ITimeService.h"
+#include "SampleData.h"
+#include <vector>
 
 class CDummySampler : public ISampler
 {
 public:
     /// @brief Constructor
-    CDummySampler();
+    CDummySampler( const ITimeService::Ptr & systime );
 
     /// @brief Virtual destructor
     virtual ~CDummySampler();
@@ -24,6 +27,11 @@ private:
     /// @return Sample data serialized to satring,
     ///         empty string if no more samples available in current cycle (surface reached)
     virtual  SampleData::Ptr getSample() override;
+
+    ITimeService::Ptr mTimeService; ///< Time service instance
+    std::vector<SampleData::Ptr> mSamples; ///< Vector of sample data
+    int mSampleIndex; ///< Current sample index
+
 };
 
 #endif // CDUMMYSAMPLER_H
