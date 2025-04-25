@@ -123,7 +123,7 @@ bool CCsvSerializer::serialize( const SampleData::Ptr & data, std::ostringstream
     csvFields->ActivityDepthHeightMeasure = ISampleSerializer::toTwoDecimalString( data->depth );
 
     // Set temperature-related fields and serialize
-    csvFields->CharacteristicName = "Temperature, water";
+    csvFields->CharacteristicName = "\"Temperature, water\"";
     csvFields->ResultValue = ISampleSerializer::toTwoDecimalString( data->temperature );
     csvFields->ResultUnit = "deg C";
     DatasetFields::toCSV( oss, csvFields );
