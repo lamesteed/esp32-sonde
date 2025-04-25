@@ -24,7 +24,8 @@ float Sensor::getAnalogInputVoltage(int inputPin) {
 
 float Sensor::getValue(float input_voltage, float factorA, float factorB) {
     float result = factorA * input_voltage + factorB;
-    return (result > 0) ? result : 0;
+    //return (result > 0) ? result : 0;
+    return result;
 }
 
 Sensor::~Sensor() {

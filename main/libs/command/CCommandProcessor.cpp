@@ -56,7 +56,7 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     if ( !command.compare( CMD_TESTMODE ) )
     {
         // create and execute test mode command
-        static const int SAMPLES_COUNT = 5;
+        static const int SAMPLES_COUNT = 3;
         cmd = std::make_shared<CTestModeCommand>( mSampler, mSerializerTxt, mStorageService, mPublisher, SAMPLES_COUNT );
     } else if ( !command.compare( CMD_REBOOT ) )
     {
