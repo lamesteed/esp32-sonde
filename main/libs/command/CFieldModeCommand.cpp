@@ -89,7 +89,7 @@ bool CFieldModeCommand::execute()
     // - Finally, we enable publishing service so client can download the resultant file
 
     SamplingResultsByDepth results;
-    bool firstSample = true;
+    bool appendToFile = false;
     while( true )
     {
         // sleep for X seconds
@@ -99,7 +99,7 @@ bool CFieldModeCommand::execute()
         SampleData::Ptr sample = mSampler->getSample();
 
         // store next sample to temporary file
-        storeSample( sample, filenameTmp, firstSample );
+        storeSample( sample, filenameTmp, appendToFile );
 
         addSampleToDepthBucket( results, sample, depthInterval );
 
@@ -111,7 +111,7 @@ bool CFieldModeCommand::execute()
             break;
         }
 
-        firstSample = false;
+        appendToFile = true;
     }
 
     // Prepare final results file
@@ -132,20 +132,20 @@ bool CFieldModeCommand::execute()
 
 void CFieldModeCommand::addSampleToDepthBucket( SamplingResultsByDepth & depthBuckets, const SampleData::Ptr & sample, float depthInterval ) const
 {
-    // For negative depth values, we need to use floor division to properly bucket them
-    // This ensures -1.3m with interval 1.2m goes to -1.2m bucket, -2.5m goes to -2.4m bucket, etc.
-    float depthBucket = std::floor(sample->depth / depthInterval) * depthInterval;
+    // Calculate the nearest bucket for this depth using rounding
+    float rawBucket = sample->depth / depthInterval;
+    float depthBucket = std::round(rawBucket) * depthInterval;
 
     // Skip surface samples (we do not add bucket for surface samples)
-    if (std::abs(depthBucket) < depthInterval)
+    if (std::abs(depthBucket) < depthInterval * 0.5)
     {
         ESP_LOGI(TAG, "Skipping sample in first depth bucket: depth=%.2f, bucket=%.2f",
                  sample->depth, depthBucket);
         return;
     }
 
-    // Calculate 10% tolerance of depth interval
-    float tolerance = 0.1 * depthInterval;
+    // Calculate tolerance of depth interval (15%)
+    float tolerance = 0.15 * depthInterval;
 
     // Check if sample is within tolerance of the bucket depth
     float diff = std::abs(sample->depth - depthBucket);
