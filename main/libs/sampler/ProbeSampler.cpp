@@ -6,12 +6,11 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define PRESSURE_SENSOR_INPUT_PIN 36        // pin GPIO36 (ADC0) to pressure sensor
+#define PRESSURE_SENSOR_INPUT_PIN "adc0"         // ADS1115 ADC pin A0 to pressure sensor 
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
 #define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
-#define DO_SENSOR_INPUT_PIN       27        // pin GPIO27 to DO sensor
-
+#define DO_SENSOR_INPUT_PIN       35        // pin GPIO35 to DO sensor
 
 Sensor analog_sensor;
 const char * ProbeSampler::TAG = "ProbeSampler";
@@ -29,13 +28,13 @@ const char * ProbeSampler::CFG_FILENAME = "FILENAME";
 
 ProbeSampler::ProbeSampler( const ITimeService::Ptr & timeService )
         : mCalibrationParameters( { { CFG_NUMBER_OF_SAMPLES, "10" },
-                                    { CFG_TDS_CONVERSION_FACTOR_A, "434.8" },
+                                    { CFG_TDS_CONVERSION_FACTOR_A, "1220" },
                                     { CFG_TDS_CONVERSION_FACTOR_B, "0" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_A, "25" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-12.5" },
-                                    { CFG_PH_CONVERSION_FACTOR_A, "-5.7" },
+                                    { CFG_PRESSURE_CONVERSION_FACTOR_A, "25.13" },
+                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-13.07" },
+                                    { CFG_PH_CONVERSION_FACTOR_A, "2.8" },
                                     { CFG_PH_CONVERSION_FACTOR_B, "0" },
-                                    { CFG_DO_CONVERSION_FACTOR_A, "1" },
+                                    { CFG_DO_CONVERSION_FACTOR_A, "2381" },
                                     { CFG_DO_CONVERSION_FACTOR_B, "0" },
                                     { CFG_FILENAME, "output.csv" }} )
         , mConfigHelper()
@@ -61,6 +60,14 @@ float ProbeSampler::getConductivity (float tds_input_voltage) {
     return (conductivity > 0) ? conductivity : 0;
 }
 
+void clamp_result(float* result, int min_value, int max_value) {
+    /* Clamp the result to be within the range [0, 100] */
+    if (*result < min_value) {
+        *result = min_value;
+    } else if (*result > max_value) {
+        *result = max_value;
+    }
+}
 void ProbeSampler::readAllSensors( SampleData & data ) {
     ESP_LOGI( TAG, "Reading sensors..." );
 
@@ -72,8 +79,11 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
     data.conductivity = getConductivity(data.tds_voltage);
     data.ph_voltage = analog_sensor.getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
     data.ph = analog_sensor.getValue(data.ph_voltage, mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_B));
-    data.do2_voltage = analog_sensor.getAnalogInputVoltage(DO_SENSOR_INPUT_PIN);
+    clamp_result(&data.ph,0,14);
+    data.do2_voltage = analog_sensor.getAnalogInputVoltage(DO_SENSOR_INPUT_PIN)/11; //11x gain as per sensor spec, plus calibration adjustment to get the right probe voltage
     data.do2 = analog_sensor.getValue(data.do2_voltage, mConfigHelper->getAsFloat(CFG_DO_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_DO_CONVERSION_FACTOR_B));
+    clamp_result(&data.do2, 0, 100);
+
 
 }
 

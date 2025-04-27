@@ -15,6 +15,7 @@ public:
     /// @brief Virtual destructor
     virtual ~Sensor();
 
+    float getAnalogInputVoltage (std::string inputPin);
     float getAnalogInputVoltage (int inputPin);
     float getValue (float input_voltage, float factorA, float factorB); // Updated method
 
