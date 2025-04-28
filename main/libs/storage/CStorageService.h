@@ -21,6 +21,8 @@ private:
     virtual bool storeData( const std::string & filename, const std::string & inData) override;
     virtual bool appendData( const std::string & filename, const std::string & inData) override;
 
+    virtual IInputStream::Ptr getInputStream( const std::string & filename ) override;
+
 private:
     static const char * TAG; ///< Logger tag
     static const char * SENTRY226_DIR; ///< Directory name for sentry226 data

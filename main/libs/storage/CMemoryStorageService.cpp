@@ -1,4 +1,5 @@
 #include "CMemoryStorageService.h"
+#include "CStringInputStream.h"
 #include "esp_log.h"
 
 #include <sstream>
@@ -160,5 +161,28 @@ bool CMemoryStorageService::appendData( const std::string & filename, const std:
             mStorage[filename] = inData;
         }
         return true;
+    }
+}
+
+IInputStream::Ptr CMemoryStorageService::getInputStream( const std::string & filename )
+{
+    if ( mBypassMemoryStorage )
+    {
+        return mUnderlying->getInputStream( filename );
+    }
+    else
+    {
+        ESP_LOGI( TAG, "getInputStream() - creating input stream for file: %s", filename.c_str() );
+        std::lock_guard<std::mutex> lock( mStorageMutex );
+        auto it = mStorage.find( filename );
+        if ( it != mStorage.end() )
+        {
+            return std::make_shared<CStringInputStream>( it->second );
+        }
+        else
+        {
+            ESP_LOGE( TAG, "getInputStream() - file not found in memory: %s", filename.c_str() );
+            return nullptr;
+        }
     }
 }

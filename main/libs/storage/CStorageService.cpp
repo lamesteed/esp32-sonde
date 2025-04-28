@@ -1,4 +1,5 @@
 #include "CStorageService.h"
+#include "CFileInputStream.h"
 
 #define DEBUG_ESP_SD
 #include "SD_MMC.h"
@@ -268,4 +269,32 @@ bool CStorageService::appendData( const std::string & filename, const std::strin
     // close file
     file.close();
     return true;
+}
+
+IInputStream::Ptr CStorageService::getInputStream( const std::string & filename )
+{
+    ESP_LOGI( TAG, "getInputStream() - getting input stream for file: %s", filename.c_str() );
+
+    if ( !mInitialized )
+    {
+        ESP_LOGE( TAG, "getInputStream() - service not initialized" );
+        return nullptr;
+    }
+
+    // construct filename (concatenate directory and filename)
+    std::string fullFilename = SENTRY226_DIR;
+    fullFilename += "/";
+    fullFilename += filename;
+
+    // open file for reading
+    File file = SD_MMC.open( fullFilename.c_str(), FILE_READ );
+    if ( !file )
+    {
+        ESP_LOGE( TAG, "getInputStream() - failed to open file for reading" );
+        return nullptr;
+    }
+
+    // create input stream from file
+    IInputStream::Ptr inputStream = std::make_shared<CFileInputStream>( file );
+    return inputStream;
 }

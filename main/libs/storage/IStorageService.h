@@ -1,6 +1,7 @@
 #ifndef ISTORAGESERVICE_H
 #define ISTORAGESERVICE_H
 
+#include "IInputStream.h"
 #include <memory>
 #include <list>
 #include <string>
@@ -22,6 +23,9 @@ public:
     virtual bool readData( const std::string & filename, std::string & outData ) = 0;
     virtual bool storeData( const std::string & filename, const std::string & inData) = 0;
     virtual bool appendData( const std::string & filename, const std::string & inData) = 0;
+
+    //Stream interface
+    virtual IInputStream::Ptr getInputStream( const std::string & filename ) = 0;
 };
 
 #endif // ISTORAGESERVICE_H

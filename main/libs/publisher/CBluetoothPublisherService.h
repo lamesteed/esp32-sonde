@@ -21,6 +21,7 @@ private:
     virtual bool start() override;
     virtual bool stop() override;
     virtual bool publishData( const std::string & data, bool sendEOD ) override;
+    virtual bool publishData( const IInputStream::Ptr & inputStream ) override;
     virtual void setNotificationListener( ICommandListener * listener );
 
     // BLEServerCallbacks interface

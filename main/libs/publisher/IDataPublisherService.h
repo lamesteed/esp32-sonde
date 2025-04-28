@@ -2,6 +2,7 @@
 #define IDATAPUBLISHERSERVICE_H
 
 #include<memory>
+#include "IInputStream.h"
 
 class ICommandListener;
 
@@ -25,6 +26,8 @@ public:
     /// @param data string-serilized data to be published for consumer
     /// @return true if data published successfully, false otherwise
     virtual bool publishData( const std::string & data, bool sendEOD ) = 0;
+
+    virtual bool publishData( const IInputStream::Ptr & inputStream ) = 0;
 
     virtual void setNotificationListener( ICommandListener * listener ) = 0;
 };

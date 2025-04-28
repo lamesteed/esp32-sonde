@@ -310,3 +310,37 @@ bool CBluetoothPublisherService::publishData( const std::string & data, bool sen
     ESP_LOGI( TAG, "publishData() - data published" );
     return true;
 }
+
+bool CBluetoothPublisherService::publishData( const IInputStream::Ptr & inputStream )
+{
+    ESP_LOGI( TAG, "publishData() - publishing data from input stream ..." );
+    if ( !mDeviceConnected || mCurrentCommand.empty() )
+    {
+        ESP_LOGE( TAG, "publishData() - device not connected or not ready to receive data" );
+        return false;
+    }
+
+    // read data from input stream and publish it
+    uint8_t buffer[ mMaxMtu - 3 ]; // 3 bytes comes from ATT protocol overhead: 2 byte for attribute handle + 1 byte for opcode
+    while ( !inputStream->eof() )
+    {
+        size_t bytesRead = inputStream->read( buffer, sizeof( buffer ) );
+        if ( bytesRead > 0 )
+        {
+            mNotifyCharacteristic->setValue( String( (const char *)buffer, bytesRead ) );
+            mNotifyCharacteristic->notify();
+            ESP_LOGI( TAG, "publishData() - data sent: %d bytes", bytesRead );
+            delayMsec( 50 );
+        }
+    }
+    inputStream->close();
+
+    // send EOD (End Of Data) notification
+    static const String EOD = "END_OF_DATA";
+    mNotifyCharacteristic->setValue( EOD );
+    mNotifyCharacteristic->notify();
+    ESP_LOGI( TAG, "publishData() - EOD sent" );
+
+    ESP_LOGI( TAG, "publishData() - data published" );
+    return true;
+}

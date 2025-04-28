@@ -36,14 +36,13 @@ bool CGetFileCommand::execute()
     std::string filename = it->second;
     std::string fileData;
 
-    // read data from storage
-    bool success = mStorageService->readData( filename, fileData );
-    if ( !success )
+    // read data from storage using input stream
+    IInputStream::Ptr inputStream = mStorageService->getInputStream( filename );
+    if ( !inputStream )
     {
-        mPublisher->publishData( "Failed to read file: " + filename, true );
+        mPublisher->publishData( "Failed to get input stream for file: " + filename, true );
         return false;
     }
 
-    // publish data to client
-    return mPublisher->publishData( fileData, true );
+    return mPublisher->publishData( inputStream );
 }
