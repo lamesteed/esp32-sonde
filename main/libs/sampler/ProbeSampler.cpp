@@ -61,7 +61,6 @@ float ProbeSampler::getConductivity (float tds_input_voltage) {
 }
 
 void clamp_result(float* result, int min_value, int max_value) {
-    /* Clamp the result to be within the range [0, 100] */
     if (*result < min_value) {
         *result = min_value;
     } else if (*result > max_value) {
@@ -80,11 +79,9 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
     data.ph_voltage = analog_sensor.getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
     data.ph = analog_sensor.getValue(data.ph_voltage, mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_B));
     clamp_result(&data.ph,0,14);
-    data.do2_voltage = analog_sensor.getAnalogInputVoltage(DO_SENSOR_INPUT_PIN)/11; //11x gain as per sensor spec, plus calibration adjustment to get the right probe voltage
+    data.do2_voltage = analog_sensor.getAnalogInputVoltage(DO_SENSOR_INPUT_PIN)/11; //11x gain as per sensor spec
     data.do2 = analog_sensor.getValue(data.do2_voltage, mConfigHelper->getAsFloat(CFG_DO_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_DO_CONVERSION_FACTOR_B));
     clamp_result(&data.do2, 0, 100);
-
-
 }
 
 SampleData::Ptr ProbeSampler::getSample() {

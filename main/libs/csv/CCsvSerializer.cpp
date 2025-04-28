@@ -155,7 +155,7 @@ bool CCsvSerializer::serialize( const SampleData::Ptr & data, std::ostringstream
     // Set DO-related fields and serialize
     csvFields->CharacteristicName = "Dissolved oxygen (DO)";
     csvFields->ResultValue = std::to_string( data->do2 );
-    csvFields->ResultUnit = "mg/l";
+    csvFields->ResultUnit = "%";
     DatasetFields::toCSV( oss, csvFields );
 
     return true;

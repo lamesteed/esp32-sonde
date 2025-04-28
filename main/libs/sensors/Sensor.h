@@ -15,9 +15,9 @@ public:
     /// @brief Virtual destructor
     virtual ~Sensor();
 
-    float getAnalogInputVoltage (std::string inputPin);
-    float getAnalogInputVoltage (int inputPin);
-    float getValue (float input_voltage, float factorA, float factorB); // Updated method
+    float getAnalogInputVoltage (std::string inputPin); // For sensors connected through the ADC1115 
+    float getAnalogInputVoltage (int inputPin);         // For sensors connected directly to analog input
+    float getValue (float input_voltage, float factorA, float factorB); // Based on voltage and calibration values
 
 private:
     // ISampler interface

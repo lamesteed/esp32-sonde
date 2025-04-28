@@ -12,7 +12,7 @@
 #define ADC_RESOLUTION            4096.0    // 12 bits of resolution
 Adafruit_ADS1115 ads(0x48);
 
-float ADC_COMPENSATION = 1;                 // 0dB attenuation
+float ADC_COMPENSATION = 1;                 // 0dB attenuation. 
 
 const char * Sensor::TAG = "Sensor";
 
@@ -28,21 +28,21 @@ float Sensor::getAnalogInputVoltage(std::string inputPin) {
     int16_t adc = ads.readADC_SingleEnded(ads_port);
     float voltage = (adc * 0.1875)/1000;
     float result = round(voltage * 100)/100;
-    return (result > 0) ? result : 0;
+    //return (result > 0) ? result : 0;
+    return result;
 }
 
 float Sensor::getAnalogInputVoltage(int inputPin) {
 
     float input = analogRead(inputPin);
-    float voltage = input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
-    float result = round(voltage * 100)/100;
-    return (result > 0) ? result : 0;
+    float result = input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
+    //float result = round(voltage * 100)/100;
+    //return (result > 0) ? result : 0;
+    return result;
 }
 
 float Sensor::getValue(float input_voltage, float factorA, float factorB) {
-    float result = factorA * input_voltage + factorB;
-    //return (result > 0) ? result : 0;
-    return result;
+    return factorA * input_voltage + factorB;
 }
 
 Sensor::~Sensor() {
