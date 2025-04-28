@@ -14,11 +14,13 @@ CFieldModeCommand::CFieldModeCommand(
     const ISampleSerializer::Ptr & serializer,
     const IStorageService::Ptr & storage,
     const IDataPublisherService::Ptr & publisher,
+    const IWatchdog::Ptr & timeService,
     const ICommand::CommandArgs & args )
     : mSampler( sampler )
     , mSerializer( serializer )
     , mStorageService( storage )
     , mPublisher( publisher )
+    , mWatchdog( timeService )
     , mArgs( args )
 {
 }
@@ -63,6 +65,8 @@ bool CFieldModeCommand::execute()
     //fetch sampling depth interval from metadata map (i.e. sample every 1 meter of depth) and convert to int
     float depthInterval =  std::stof( metadata["SAMPLING_STEP"] );
     int samplingIntervalMsec = std::stoi( metadata["SAMPLING_INTERVAL_MSEC"] );
+    int maxDurationSec = std::stoi( metadata["SAMPLING_MAX_DURATION_SEC"] );
+    mWatchdog->start( maxDurationSec );
 
     // initialize sampler
     if ( !mSampler->init( config ) )
@@ -104,10 +108,13 @@ bool CFieldModeCommand::execute()
         addSampleToDepthBucket( results, sample, depthInterval );
 
         // check if surface is reached
-        if ( sample->pressure < 0.1 && results.size() > 0 )
+        if ( ( sample->pressure < 0.1 && results.size() > 0 ) || mWatchdog->isExpired() )
         {
-            ESP_LOGI( TAG, "Surface reached, sampling stopped: pressure: %.2f psi, calculated depth: %.2f", sample->pressure, sample->depth );
             // surface is reached, break the loop
+            ESP_LOGI( TAG, "Surface reached, sampling stopped: pressure: %.2f psi, calculated depth: %.2f, watchdog expired: %s",
+                sample->pressure,
+                sample->depth,
+                mWatchdog->isExpired() ? "true" : "false" );
             break;
         }
 

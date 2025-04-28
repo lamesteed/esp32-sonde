@@ -6,6 +6,7 @@
 #include "ISampleSerializer.h"
 #include "IStorageService.h"
 #include "IDataPublisherService.h"
+#include "IWatchdog.h"
 
 
 class CFieldModeCommand : public ICommand
@@ -21,12 +22,14 @@ public:
     /// @param serializer Sample serializer instance
     /// @param storage Storage service instance
     /// @param publisher Data publisher instance
+    /// @param watchdog Watchdog instance
     /// @param args Command arguments (expected key: "filename")
     CFieldModeCommand(
         const ISampler::Ptr & sampler,
         const ISampleSerializer::Ptr & serializer,
         const IStorageService::Ptr & storage,
         const IDataPublisherService::Ptr & publisher,
+        const IWatchdog::Ptr & watchdog,
         const ICommand::CommandArgs & args
     );
 
@@ -62,6 +65,7 @@ private:
     ISampleSerializer::Ptr mSerializer;     ///< Sample serializer instance
     IStorageService::Ptr mStorageService;   ///< Storage service interface
     IDataPublisherService::Ptr mPublisher;  ///< Data publisher interface
+    IWatchdog::Ptr mWatchdog;               ///< Watchdog instance
     ICommand::CommandArgs mArgs;            ///< Command arguments
 };
 

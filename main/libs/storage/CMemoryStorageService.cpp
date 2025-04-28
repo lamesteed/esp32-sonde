@@ -60,6 +60,9 @@ bool CMemoryStorageService::start()
             oss << "GPS_ACCURACY=10.0" << std::endl;
             oss << "GPS_ACCURACY_UNIT=m" << std::endl;
             oss << "GPS_SYSTEM_NAME=WGS84" << std::endl;
+            oss << "SAMPLING_STEP=1.0" << std::endl;
+            oss << "SAMPLING_INTERVAL_MSEC=5000" << std::endl;
+            oss << "SAMPLING_MAX_DURATION_SEC=0" << std::endl;
             std::lock_guard<std::mutex> lock( mStorageMutex );
             mStorage["metadata.cfg"] = oss.str();
         }

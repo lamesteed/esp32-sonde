@@ -8,6 +8,7 @@
 #include "CStoreFileCommand.h"
 #include "CSetTimeCommand.h"
 #include "CFieldModeCommand.h"
+#include "CWatchdog.h"
 #include "esp_log.h"
 
 // constants definition
@@ -89,9 +90,9 @@ void CCommandProcessor::onCommandReceived( const std::string & command, const st
     {
         //expect arguments for this command
         ICommand::CommandArgs cmdArgs = CCommandProcessor::parseArgs( args );
-        // create and execute set time command
         // create and execute field mode command
-        cmd = std::make_shared<CFieldModeCommand>( mSampler, mSerializer, mStorageService, mPublisher, cmdArgs );
+        IWatchdog::Ptr watchdog = std::make_shared<CWatchdog>( mTimeService );
+        cmd = std::make_shared<CFieldModeCommand>( mSampler, mSerializer, mStorageService, mPublisher, watchdog, cmdArgs );
     }
     else
     {
