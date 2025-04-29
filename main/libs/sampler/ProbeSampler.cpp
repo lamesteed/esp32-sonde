@@ -9,7 +9,7 @@
 #define PRESSURE_SENSOR_INPUT_PIN "adc0"         // ADS1115 ADC pin A0 to pressure sensor 
 #define TDS_SENSOR_INPUT_PIN      34        // pin GPIO34 (ADC1) to TDS sensor
 #define TEMP_SENSOR_INPUT_PIN     18        // pin GPIO18 to DS18B20 sensor's DATA pin
-#define PH_SENSOR_INPUT_PIN       26        // pin GPIO26 to PH sensor
+#define PH_SENSOR_INPUT_PIN       36        // pin GPIO36 to PH sensor
 #define DO_SENSOR_INPUT_PIN       35        // pin GPIO35 to DO sensor
 
 Sensor analog_sensor;
@@ -27,13 +27,13 @@ const char * ProbeSampler::CFG_DO_CONVERSION_FACTOR_B = "DO_CONVERSION_FACTOR_B"
 const char * ProbeSampler::CFG_FILENAME = "FILENAME";
 
 ProbeSampler::ProbeSampler( const ITimeService::Ptr & timeService )
-        : mCalibrationParameters( { { CFG_NUMBER_OF_SAMPLES, "10" },
-                                    { CFG_TDS_CONVERSION_FACTOR_A, "1220" },
+        : mCalibrationParameters( { { CFG_NUMBER_OF_SAMPLES, "1" },
+                                    { CFG_TDS_CONVERSION_FACTOR_A, "1.36" },
                                     { CFG_TDS_CONVERSION_FACTOR_B, "0" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_A, "25.13" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-13.07" },
-                                    { CFG_PH_CONVERSION_FACTOR_A, "2.8" },
-                                    { CFG_PH_CONVERSION_FACTOR_B, "0" },
+                                    { CFG_PRESSURE_CONVERSION_FACTOR_A, "25" },
+                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-13" },
+                                    { CFG_PH_CONVERSION_FACTOR_A, "6.465" },
+                                    { CFG_PH_CONVERSION_FACTOR_B, "-9.45" },
                                     { CFG_DO_CONVERSION_FACTOR_A, "2381" },
                                     { CFG_DO_CONVERSION_FACTOR_B, "0" },
                                     { CFG_FILENAME, "output.csv" }} )
@@ -50,13 +50,22 @@ float ProbeSampler::getTemperatureInCelsius () {
     return mTempSensorPtr->getTempCByIndex(0);  // Read temperature in °C
 }
 
-float ProbeSampler::getConductivity (float tds_input_voltage) {
+float ProbeSampler::calculate_tds_from_voltage(float tds_input_voltage, float temperature, float factorA, float factorB) {
+    //http://www.cqrobot.wiki/index.php/TDS_(Total_Dissolved_Solids)_Meter_Sensor_SKU:_CQRSENTDS01
+    float compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0); //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
+    float compensationVoltage = tds_input_voltage / compensationCoefficient; //temperature compensation
+    float rawTdsValue = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 * compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5; //convert 
+    return factorA * rawTdsValue + factorB;
+;
+}
+
+float ProbeSampler::getConductivity (float tds_value) {
     /* Conductivity = TDS * conversion factor, where
         0.65 - general purpose
         0.5  - sea water
         0.7  - drinking water
         0.8  - hydroponics */
-    float conductivity = analog_sensor.getValue(tds_input_voltage, mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_B))/0.7; // assuming 0.7 conversion factor
+    float conductivity = tds_value/0.7; // assuming 0.7 conversion factor
     return (conductivity > 0) ? conductivity : 0;
 }
 
@@ -74,8 +83,8 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
     data.pressure_voltage = analog_sensor.getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
     data.pressure = analog_sensor.getValue(data.pressure_voltage, mConfigHelper->getAsFloat(CFG_PRESSURE_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PRESSURE_CONVERSION_FACTOR_B));
     data.tds_voltage = analog_sensor.getAnalogInputVoltage(TDS_SENSOR_INPUT_PIN);
-    data.tds = analog_sensor.getValue(data.tds_voltage, mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_B));
-    data.conductivity = getConductivity(data.tds_voltage);
+    data.tds = calculate_tds_from_voltage(data.tds_voltage, data.temperature, mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_TDS_CONVERSION_FACTOR_B));
+    data.conductivity = getConductivity(data.tds);
     data.ph_voltage = analog_sensor.getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
     data.ph = analog_sensor.getValue(data.ph_voltage, mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_B));
     clamp_result(&data.ph,0,14);
@@ -112,7 +121,7 @@ SampleData::Ptr ProbeSampler::getSample() {
         accumulatedData->ph += data.ph;
         accumulatedData->do2_voltage += data.do2_voltage;
         accumulatedData->do2 += data.do2;
-        delayMsec( 10 );                               // delay 10ms between each sample
+        delayMsec( 200 );                               // delay 100ms between each sample
     }
 
     accumulatedData->pressure /= numSamples;

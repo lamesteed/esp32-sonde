@@ -34,6 +34,7 @@ private:
 
 
     float getTemperatureInCelsius();
+    float calculate_tds_from_voltage(float tds_input_voltage, float temperature, float factorA, float factorB);
     float getConductivity (float tds_input_voltage);
     void readAllSensors( SampleData & data );
     SampleData::Ptr averageSensorReadings(int numSamples);
