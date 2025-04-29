@@ -26,8 +26,8 @@ float Sensor::getAnalogInputVoltage(std::string inputPin) {
     std::istringstream iss(inputPin.substr(inputPin.size() - 1));
     iss >> ads_port;
     int16_t adc = ads.readADC_SingleEnded(ads_port);
-    float voltage = (adc * 0.1875)/1000;
-    float result = round(voltage * 100)/100;
+    float result = (adc * 0.1875)/1000;
+    //float result = round(voltage * 100)/100;
     return (result > 0) ? result : 0;
 }
 
