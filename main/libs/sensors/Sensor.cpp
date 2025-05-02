@@ -21,7 +21,7 @@ Sensor::Sensor() {
     ESP_LOGI(TAG, "Instance created");
 }
 
-float Sensor::getAnalogInputVoltage(std::string inputPin) {
+float Sensor::getAnalogInputVoltage(std::string inputPin) { //read voltage from ADS1115 AD converter
     int ads_port;
     std::istringstream iss(inputPin.substr(inputPin.size() - 1));
     iss >> ads_port;
@@ -31,8 +31,7 @@ float Sensor::getAnalogInputVoltage(std::string inputPin) {
     return (result > 0) ? result : 0;
 }
 
-float Sensor::getAnalogInputVoltage(int inputPin) {
-
+float Sensor::getAnalogInputVoltage(int inputPin) { //read voltage from ESP32's analog input
     float input = analogRead(inputPin);
     float result = input * REF_VOLTAGE * ADC_COMPENSATION / ADC_RESOLUTION;
     //float result = round(voltage * 100)/100;
@@ -42,6 +41,10 @@ float Sensor::getAnalogInputVoltage(int inputPin) {
 
 float Sensor::getValue(float input_voltage, float factorA, float factorB) {
     return factorA * input_voltage + factorB;
+}
+
+float Sensor::getValue(float input_voltage, float factorA, float factorB, float factorC, float factorD) {
+    return factorA * pow(input_voltage, 3) +factorB * pow(input_voltage, 2) + factorC * input_voltage + factorD;
 }
 
 Sensor::~Sensor() {

@@ -35,7 +35,7 @@ private:
 
     float getTemperatureInCelsius();
     float calculate_tds_from_voltage(float tds_input_voltage, float temperature, float factorA, float factorB);
-    float getConductivity (float tds_input_voltage);
+    float tds_temp_compensation(float tds_input_voltage, float temperature );
     void readAllSensors( SampleData & data );
     SampleData::Ptr averageSensorReadings(int numSamples);
 
@@ -45,6 +45,8 @@ private:
     static const char * CFG_NUMBER_OF_SAMPLES;
     static const char * CFG_TDS_CONVERSION_FACTOR_A;
     static const char * CFG_TDS_CONVERSION_FACTOR_B;
+    static const char * CFG_TDS_CONVERSION_FACTOR_C;
+    static const char * CFG_TDS_CONVERSION_FACTOR_D;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_A;
     static const char * CFG_PRESSURE_CONVERSION_FACTOR_B;
     static const char * CFG_PH_CONVERSION_FACTOR_A;
