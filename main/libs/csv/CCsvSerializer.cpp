@@ -132,12 +132,14 @@ bool CCsvSerializer::serialize( const SampleData::Ptr & data, std::ostringstream
     csvFields->CharacteristicName = "Pressure";
     csvFields->ResultValue = std::to_string( data->pressure );
     csvFields->ResultUnit = "psi";
+    csvFields->ResultComment = std::to_string( data->pressure_voltage ) + " v";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set TDS-related fields and serialize
     csvFields->CharacteristicName = "Total dissolved solids";
     csvFields->ResultValue = std::to_string( data->tds );
     csvFields->ResultUnit = "ppm";
+    csvFields->ResultComment = std::to_string( data->tds_voltage ) + " v";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set conductivity-related fields and serialize
@@ -150,12 +152,14 @@ bool CCsvSerializer::serialize( const SampleData::Ptr & data, std::ostringstream
     csvFields->CharacteristicName = "pH";
     csvFields->ResultValue = std::to_string( data->ph );
     csvFields->ResultUnit = "None";
+    csvFields->ResultComment = std::to_string( data->ph_voltage ) + " v";
     DatasetFields::toCSV( oss, csvFields );
 
     // Set DO-related fields and serialize
     csvFields->CharacteristicName = "Dissolved oxygen (DO)";
     csvFields->ResultValue = std::to_string( data->do2 );
     csvFields->ResultUnit = "%";
+    csvFields->ResultComment = std::to_string( data->do2_voltage ) + " v";
     DatasetFields::toCSV( oss, csvFields );
 
     return true;
