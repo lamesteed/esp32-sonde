@@ -47,15 +47,15 @@ bool CFieldModeCommand::execute()
     std::string filenameTmp = filename;
     filenameTmp.replace( filenameTmp.find( ".csv" ), 4, "_tmp.csv" );
 
-    // retrieve sampler configuration parameters from storage
-    ISampler::CalibrationConfig config = readConfig( "sampler.cfg" );
-    if ( config.empty() )
+    // retrieve sampler calibration parameters from storage
+    ComponentConfig calibration = readConfig( "sampler.cfg" );
+    if ( calibration.empty() )
     {
         mPublisher->publishData( "Failed to read sampler configuration", true );
         return false;
     }
-    //retrieve metadata configuration parameters from storage
-    ISampleSerializer::MetadataConfig metadata = readConfig( "metadata.cfg" );
+    // retrieve metadata configuration parameters from storage
+    ComponentConfig metadata = readConfig( "metadata.cfg" );
     if ( metadata.empty() )
     {
         mPublisher->publishData( "Failed to read metadata configuration", true );
@@ -69,7 +69,7 @@ bool CFieldModeCommand::execute()
     mWatchdog->start( maxDurationSec );
 
     // initialize sampler
-    if ( !mSampler->init( config ) )
+    if ( !mSampler->init( calibration ) )
     {
         mPublisher->publishData( "Sampler initialization failed", true );
         return false;
@@ -281,10 +281,10 @@ void CFieldModeCommand::storeSamples( const SampleDataListPtr & samples, const s
     }
 }
 
-std::map<std::string, std::string> CFieldModeCommand::readConfig( const std::string & filename ) const
+ComponentConfig CFieldModeCommand::readConfig( const std::string & filename ) const
 {
     // retrieve configuration parameters from storage
-    std::map<std::string, std::string> config;
+    ComponentConfig config;
     std::string configData;
     if ( !mStorageService->readData( filename, configData ) )
     {

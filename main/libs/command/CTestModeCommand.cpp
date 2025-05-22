@@ -28,10 +28,10 @@ std::string CTestModeCommand::getDescription() const
     return "TESTMODE: samplesCount=" + std::to_string( mSamplesCount );
 }
 
-std::map<std::string, std::string> CTestModeCommand::readConfig( const std::string & filename ) const
+ComponentConfig CTestModeCommand::readConfig( const std::string & filename ) const
 {
     // retrieve configuration parameters from storage
-    std::map<std::string, std::string> config;
+    ComponentConfig config;
     std::string configData;
     if ( !mStorageService->readData( filename, configData ) )
     {
@@ -62,7 +62,7 @@ std::map<std::string, std::string> CTestModeCommand::readConfig( const std::stri
 bool CTestModeCommand::execute()
 {
     // retrieve sampler configuration parameters from storage
-    ISampler::CalibrationConfig config = readConfig( "sampler.cfg" );
+    ComponentConfig config = readConfig( "sampler.cfg" );
     if ( config.empty() )
     {
         mPublisher->publishData( "Failed to read sampler configuration", true );

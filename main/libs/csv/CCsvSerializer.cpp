@@ -18,17 +18,17 @@ const char * CCsvSerializer::META_GPS_SYSTEM_NAME =     "GPS_SYSTEM_NAME";
 
 CCsvSerializer::CCsvSerializer(
         const ITimeService::Ptr & timeService)
-    : mMetadataParameters( { { META_DATASET_NAME, "UNKNOWN" },
-                             { META_LOCATION_ID, "UNKNOWN_LOCATION_ID" },
-                             { META_LOCATION_NAME, "UNKNOWN_LOCATION_NAME" },
-                             { META_LOCATION_TYPE, "Lake/Pond" },
-                             { META_GPS_LATITUDE, "0.0" },
-                             { META_GPS_LONGITUDE, "0.0" },
-                             { META_GPS_ACCURACY, "10.0" },
-                             { META_GPS_ACCURACY_UNIT, "m" },
-                             { META_GPS_SYSTEM_NAME, "WGS84" } } )
+    : mDefaultMetadata( { { META_DATASET_NAME, "UNKNOWN" },
+                          { META_LOCATION_ID, "UNKNOWN_LOCATION_ID" },
+                          { META_LOCATION_NAME, "UNKNOWN_LOCATION_NAME" },
+                          { META_LOCATION_TYPE, "Lake/Pond" },
+                          { META_GPS_LATITUDE, "0.0" },
+                          { META_GPS_LONGITUDE, "0.0" },
+                          { META_GPS_ACCURACY, "10.0" },
+                          { META_GPS_ACCURACY_UNIT, "m" },
+                          { META_GPS_SYSTEM_NAME, "WGS84" } } )
     , mConfigHelper( nullptr )
-    , mTimeService( timeService)
+    , mTimeService( timeService )
     , mPendingHeader( true )
 {
     ESP_LOGI( TAG, "Instance created" );
@@ -39,12 +39,12 @@ CCsvSerializer::~CCsvSerializer()
     ESP_LOGI( TAG, "Instance destroyed" );
 }
 
-void CCsvSerializer::reset( const MetadataConfig & metadata )
+void CCsvSerializer::reset( const ComponentConfig & metadata )
 {
     ESP_LOGI( TAG, "reset() - resetting serializer state" );
 
     // Recreate metadata configuration helper with new metadata
-    mConfigHelper = std::make_shared<CCalibrationConfigHelper>( metadata, mMetadataParameters );
+    mConfigHelper = std::make_shared<CComponentConfigHelper>( metadata, mDefaultMetadata );
 
     // Reset the pending header flag
     mPendingHeader = true;

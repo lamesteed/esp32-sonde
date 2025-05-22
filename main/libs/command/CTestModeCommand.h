@@ -6,6 +6,7 @@
 #include "ISampleSerializer.h"
 #include "IDataPublisherService.h"
 #include "IStorageService.h"
+#include "ComponentConfig.h"
 
 /// @brief Command to perform sonde basic sensors testing
 class CTestModeCommand : public ICommand
@@ -39,7 +40,7 @@ private:
 
 private:
 
-std::map<std::string, std::string> readConfig( const std::string & filename ) const;
+    ComponentConfig readConfig( const std::string & filename ) const;
 
     ISampler::Ptr mSampler;                 ///< Sampler instance
     ISampleSerializer::Ptr mSerializer;     ///< Sample serializer instance

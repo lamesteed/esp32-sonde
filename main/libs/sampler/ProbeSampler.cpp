@@ -6,8 +6,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define PRESSURE_SENSOR_INPUT_PIN "adc0"         // ADS1115 ADC pin A0 to pressure sensor 
-#define TDS_SENSOR_INPUT_PIN      "adc3"         // ADS1115 ADC pin A2 to pressure sensor 
+#define PRESSURE_SENSOR_INPUT_PIN "adc0"         // ADS1115 ADC pin A0 to pressure sensor
+#define TDS_SENSOR_INPUT_PIN      "adc3"         // ADS1115 ADC pin A2 to pressure sensor
 #define TEMP_SENSOR_INPUT_PIN     18             // pin GPIO18 to DS18B20 sensor's DATA pin
 #define PH_SENSOR_INPUT_PIN       36             // pin GPIO36 to PH sensor
 #define DO_SENSOR_INPUT_PIN       35             // pin GPIO35 to DO sensor
@@ -26,7 +26,7 @@ const char * ProbeSampler::TAG = "ProbeSampler";
         0.5  - sea water
         0.7  - drinking water
         0.8  - hydroponics */
-const float tds_to_conductivity = 0.7;    
+const float tds_to_conductivity = 0.7;
 
 const float pressure_to_depth = -0.703; // convert pressure (psi) to depth (m)
 
@@ -84,18 +84,18 @@ bool initialize_do_sensor(Sensor &do_sensor) {
 }
 
 ProbeSampler::ProbeSampler( const ITimeService::Ptr & timeService )
-        : mCalibrationParameters( { { CFG_NUMBER_OF_SAMPLES, "1" },
-                                    { CFG_TDS_CONVERSION_FACTOR_A, "421.98" },
-                                    { CFG_TDS_CONVERSION_FACTOR_B, "-1080.3" },
-                                    { CFG_TDS_CONVERSION_FACTOR_C, "1581.1" },
-                                    { CFG_TDS_CONVERSION_FACTOR_D, "-316.71" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_A, "40.07" },
-                                    { CFG_PRESSURE_CONVERSION_FACTOR_B, "-20.84" },
-                                    { CFG_PH_CONVERSION_FACTOR_A, "6.465" },
-                                    { CFG_PH_CONVERSION_FACTOR_B, "-9.45" },
-                                    { CFG_DO_CONVERSION_FACTOR_A, "1" },
-                                    { CFG_DO_CONVERSION_FACTOR_B, "0" },
-                                    { CFG_FILENAME, "output.csv" }} )
+        : mDefaultCalibration( { { CFG_NUMBER_OF_SAMPLES, "1" },
+                                 { CFG_TDS_CONVERSION_FACTOR_A, "421.98" },
+                                 { CFG_TDS_CONVERSION_FACTOR_B, "-1080.3" },
+                                 { CFG_TDS_CONVERSION_FACTOR_C, "1581.1" },
+                                 { CFG_TDS_CONVERSION_FACTOR_D, "-316.71" },
+                                 { CFG_PRESSURE_CONVERSION_FACTOR_A, "40.07" },
+                                 { CFG_PRESSURE_CONVERSION_FACTOR_B, "-20.84" },
+                                 { CFG_PH_CONVERSION_FACTOR_A, "6.465" },
+                                 { CFG_PH_CONVERSION_FACTOR_B, "-9.45" },
+                                 { CFG_DO_CONVERSION_FACTOR_A, "1" },
+                                 { CFG_DO_CONVERSION_FACTOR_B, "0" },
+                                 { CFG_FILENAME, "output.csv" }} )
         , mConfigHelper()
         , mOneWirePtr( std::make_shared<OneWire>( TEMP_SENSOR_INPUT_PIN ) )
         , mTempSensorPtr( std::make_shared<DallasTemperature>( mOneWirePtr.get() ) )
@@ -133,7 +133,7 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
 
     //Temperature
     data.temperature = getTemperatureInCelsius();
-    
+
     //Pressure
     data.pressure_voltage = analog_sensor.getAnalogInputVoltage(PRESSURE_SENSOR_INPUT_PIN);
     data.pressure = analog_sensor.getValue(data.pressure_voltage, mConfigHelper->getAsFloat(CFG_PRESSURE_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PRESSURE_CONVERSION_FACTOR_B));
@@ -149,12 +149,12 @@ void ProbeSampler::readAllSensors( SampleData & data ) {
 
     //Conductivity
     data.conductivity = data.tds/tds_to_conductivity;
-    
+
     //pH
     data.ph_voltage = analog_sensor.getAnalogInputVoltage(PH_SENSOR_INPUT_PIN);
     data.ph = analog_sensor.getValue(data.ph_voltage, mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_A), mConfigHelper->getAsFloat(CFG_PH_CONVERSION_FACTOR_B));
     clamp_result(&data.ph,0,14);
-    
+
     //Dissolved Oxygen
     if (do_sensor_initialized) {
     data.do2_voltage = do_sensor.getAnalogInputVoltage(DO_SENSOR_INPUT_PIN)/11; //11x gain as per sensor spec
@@ -223,17 +223,17 @@ ProbeSampler::~ProbeSampler()
     ESP_LOGI( TAG, "Instance destroyed" );
 }
 
-bool ProbeSampler::init( const CalibrationConfig & config ) {
+bool ProbeSampler::init( const ComponentConfig & config ) {
     ESP_LOGI( TAG, "Initializing ..." );
-    mConfigHelper = std::make_shared<CCalibrationConfigHelper>( config, mCalibrationParameters );
+    mConfigHelper = std::make_shared<CComponentConfigHelper>( config, mDefaultCalibration );
     // Iterate through expected calibration parameters and print values that will be used for sampling
     ESP_LOGI( TAG, "Calibration parameters that will be applied:" );
-    for ( auto & param : mCalibrationParameters )
+    for ( auto & param : mDefaultCalibration )
     {
         ESP_LOGI( TAG, "%s = %s", param.first.c_str(), mConfigHelper->getAsString( param.first ).c_str() );
     }
 
-    mTempSensorPtr->begin();                             // initialize temperature sensor
+    mTempSensorPtr->begin(); // initialize temperature sensor
     delayMsec( 1000 );
 
     ESP_LOGI( TAG, "Initializing complete, ready to sample" );

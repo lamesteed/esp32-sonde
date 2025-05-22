@@ -1,7 +1,9 @@
 #ifndef ISAMPLESERIALIZER_H
 #define ISAMPLESERIALIZER_H
 
+#include "ComponentConfig.h"
 #include "SampleData.h"
+
 #include <map>
 
 /// @brief Interface for sample serializer
@@ -18,7 +20,7 @@ public:
 
     /// @brief Reset serializer state and (re)initialize metadata that will be used to enrich serialized sample data
     /// @param metadata Metadata configuration to use during serialization
-    virtual void reset( const MetadataConfig & metadata )  = 0;
+    virtual void reset( const ComponentConfig & metadata )  = 0;
 
     /// @brief Serialize next data sample to implementation-specific format
     /// @param data Sample data to be serialized

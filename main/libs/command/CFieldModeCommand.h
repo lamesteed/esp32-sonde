@@ -7,6 +7,7 @@
 #include "IStorageService.h"
 #include "IDataPublisherService.h"
 #include "IWatchdog.h"
+#include "ComponentConfig.h"
 
 
 class CFieldModeCommand : public ICommand
@@ -56,7 +57,7 @@ private:
 
     void storeSamples( const SampleDataListPtr & samples, const std::string & filename );
 
-    std::map<std::string, std::string> readConfig( const std::string & filename ) const;
+    ComponentConfig readConfig( const std::string & filename ) const;
 
     static const char * ARG_FILENAME;       ///< Name of the argument that specifies file name
     static const char * TAG;                ///< Tag for logging

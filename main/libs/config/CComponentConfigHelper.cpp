@@ -1,17 +1,17 @@
-#include "CCalibrationConfigHelper.h"
+#include "CComponentConfigHelper.h"
 #include <algorithm>
 #include <climits>
 #include <math.h>
 
-CCalibrationConfigHelper::CCalibrationConfigHelper (
-    const ISampler::CalibrationConfig & config,
-    const ISampler::CalibrationParams & expectedParameters )
+CComponentConfigHelper::CComponentConfigHelper (
+    const ComponentConfig & config,
+    const ComponentConfigDefaults & expectedParameters )
         : mConfig( config )
         , mParams( expectedParameters )
 {
 }
 
-std::string CCalibrationConfigHelper::getAsString( const std::string & key) const
+std::string CComponentConfigHelper::getAsString( const std::string & key) const
 {
     // Find paramenter in the configuration, if found return its value
     auto it = mConfig.find( key );
@@ -31,7 +31,7 @@ std::string CCalibrationConfigHelper::getAsString( const std::string & key) cons
     return "";
 }
 
-int CCalibrationConfigHelper::getAsInt( const std::string & key) const
+int CComponentConfigHelper::getAsInt( const std::string & key) const
 {
     // Get parameter value as string
     std::string value = getAsString( key );
@@ -40,7 +40,7 @@ int CCalibrationConfigHelper::getAsInt( const std::string & key) const
     return ( value.empty() ) ? INT_MIN : std::stoi( value );
 }
 
-float CCalibrationConfigHelper::getAsFloat( const std::string & key) const
+float CComponentConfigHelper::getAsFloat( const std::string & key) const
 {
     // Get parameter value as string
     std::string value = getAsString( key );
@@ -49,7 +49,7 @@ float CCalibrationConfigHelper::getAsFloat( const std::string & key) const
     return ( value.empty() ) ? NAN : std::stof( value );
 }
 
-bool CCalibrationConfigHelper::getAsBool( const std::string & key) const
+bool CComponentConfigHelper::getAsBool( const std::string & key) const
 {
     // Get parameter value as string
     std::string value = getAsString( key );

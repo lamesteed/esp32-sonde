@@ -46,12 +46,10 @@ CDummySampler::~CDummySampler()
 
 }
 
-bool CDummySampler::init( const CalibrationConfig & config )
+bool CDummySampler::init( const ComponentConfig & config )
 {
     mSampleIndex = 0;
-
     return true;
-
 }
 
 SampleData::Ptr CDummySampler::getSample()

@@ -9,7 +9,7 @@ CPlainTextSerializer::CPlainTextSerializer()
     ESP_LOGI( TAG, "Instance created" );
 }
 
-void CPlainTextSerializer::reset( const MetadataConfig & metadata )
+void CPlainTextSerializer::reset( const ComponentConfig & metadata )
 {
     ESP_LOGI( TAG, "reset()" );
 }

@@ -18,14 +18,13 @@ public:
 private:
     // ISampler interface
 
-    /// @brief Initialize sampler, must be called before first call to getSample()
-    ///        After this call sampler considered ready to provide samples
+    /// @brief Initialize sampler
+    /// @param config Configuration parameters to be used for sampling
     /// @return true if initialization successful, false otherwise
-    virtual bool init( const CalibrationConfig & config ) override;
+    virtual bool init( const ComponentConfig & config ) override;
 
     /// @brief  Retrieve next sample from sensors
-    /// @return Sample data serialized to satring,
-    ///         empty string if no more samples available in current cycle (surface reached)
+    /// @return Sample data, nullptr if sampling failed
     virtual  SampleData::Ptr getSample() override;
 
     ITimeService::Ptr mTimeService; ///< Time service instance

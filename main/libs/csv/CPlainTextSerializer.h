@@ -15,7 +15,7 @@ public:
 private:
 
     /// @brief Reset serializer state
-    virtual void reset( const MetadataConfig & metadata ) override;
+    virtual void reset( const ComponentConfig & metadata ) override;
 
     /// @brief Serialize sample data to string
     virtual bool serialize( const SampleData::Ptr & data, std::ostringstream & oss ) override;

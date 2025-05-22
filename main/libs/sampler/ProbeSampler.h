@@ -3,7 +3,7 @@
 #define PROBESAMPLER_H
 
 #include "ISampler.h"
-#include "CCalibrationConfigHelper.h"
+#include "CComponentConfigHelper.h"
 #include "ITimeService.h"
 
 class OneWire;
@@ -21,10 +21,10 @@ public:
 private:
     // ISampler interface
 
-    /// @brief Initialize sampler, must be called before first call to getSample()
-    ///        After this call sampler considered ready to provide samples
+    /// @brief Initialize sampler
+    /// @param config Configuration parameters to be used for sampling
     /// @return true if initialization successful, false otherwise
-    virtual bool init( const CalibrationConfig & config ) override;
+    virtual bool init( const ComponentConfig & config ) override;
 
     /// @brief  Retrieve next sample from sensors
     /// @return Sample data, nullptr if sampling failed
@@ -55,8 +55,8 @@ private:
     static const char * CFG_DO_CONVERSION_FACTOR_B;
     static const char * CFG_FILENAME;
 
-    CalibrationParams mCalibrationParameters;           ///< Expected calibration parameters and their default values
-    CCalibrationConfigHelper::Ptr mConfigHelper;        ///< Calibration configuration helper
+    ComponentConfigDefaults mDefaultCalibration;        ///< Expected calibration parameters and their default values
+    CComponentConfigHelper::Ptr mConfigHelper;          ///< Configuration parameters helper
 
     std::shared_ptr<OneWire> mOneWirePtr;               ///< OneWire instance
     std::shared_ptr<DallasTemperature> mTempSensorPtr;  ///< Temperature sensor instance

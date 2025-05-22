@@ -4,7 +4,7 @@
 #include "ISampleSerializer.h"
 #include "ITimeService.h"
 #include "ISampler.h"
-#include "CCalibrationConfigHelper.h"
+#include "CComponentConfigHelper.h"
 #include "DatasetFields.h"
 
 class CCsvSerializer : public ISampleSerializer
@@ -22,7 +22,7 @@ private:
 
     /// @brief Reset serializer state and (re)initialize metadata that will be used to enrich serialized sample data
     /// @param metadata Metadata configuration to use during serialization
-    virtual void reset( const MetadataConfig & metadata ) override;
+    virtual void reset( const ComponentConfig & metadata ) override;
 
     /// @brief Serialize next data sample to implementation-specific format
     /// @param data Sample data to be serialized
@@ -47,8 +47,8 @@ private:
     static const char * META_GPS_SYSTEM_NAME;
 
 
-    ISampler::CalibrationParams mMetadataParameters;    ///< Expected metadata parameters and their default values
-    CCalibrationConfigHelper::Ptr mConfigHelper;        ///< Calibration configuration helper
+    ComponentConfigDefaults mDefaultMetadata;           ///< Expected metadata parameters and their default values
+    CComponentConfigHelper::Ptr mConfigHelper;          ///< Calibration configuration helper
     ITimeService::Ptr mTimeService;                     ///< Time service interface
     bool mPendingHeader;                                ///< Flag indicating if header is pending
 };

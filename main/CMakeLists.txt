@@ -1,7 +1,6 @@
 idf_component_register(
     SRCS "sonde_main.cpp"
     SRCS "libs/CSondeApp.cpp"
-    SRCS "libs/sampler/CCalibrationConfigHelper.cpp"
     SRCS "libs/sampler/ProbeSampler.cpp"
     SRCS "libs/sampler/CDummySampler.cpp"
     SRCS "libs/publisher/CBluetoothPublisherService.cpp"
@@ -24,6 +23,7 @@ idf_component_register(
     SRCS "libs/csv/ISampleSerializer.cpp"
     SRCS "libs/csv/CPlainTextSerializer.cpp"
     SRCS "libs/sensors/Sensor.cpp"
+    SRCS "libs/config/CComponentConfigHelper.cpp"
     INCLUDE_DIRS ""
     INCLUDE_DIRS "libs"
     INCLUDE_DIRS "libs/publisher"
@@ -33,6 +33,7 @@ idf_component_register(
     INCLUDE_DIRS "libs/time"
     INCLUDE_DIRS "libs/csv"
     INCLUDE_DIRS "libs/sensors"
+    INCLUDE_DIRS "libs/config"
 )
 
 set(EXTRA_COMPONENT_DIRS "${PROJECT_DIR}/components")
