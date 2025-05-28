@@ -325,15 +325,30 @@ CN -->> A: "END_OF_DATA"
 ```
 
 ### Probe Sampling
-
 ```mermaid
 classDiagram
+direction TB
     class ProbeSampler {
         -int mSampleCounter
-        +ProbeSampler(int samples)
+        -std::shared_ptr<OneWire> mOneWirePtr
+        -std::shared_ptr<DallasTemperature> mTempSensorPtr
+        -CCalibrationConfigHelper mConfigHelper
+        -std::map<std::string, std::string> mDefaultCalibration
+        +ProbeSampler(const ITimeService::Ptr &timeService)
         +~ProbeSampler()
-        +bool init()
-        +std::string getSample()
+        +bool init(const CalibrationConfig &config)
+        +float getTemperatureInCelsius()
+        +float calculate_tds_from_voltage(float tds_input_voltage, float temperature, float factorA, float factorB)
+        +void readAllSensors(SampleData &data)
+        +SampleData::Ptr getSample()
+        +void clamp_result(float* result, int min_value, int max_value)
+        +void calibrateTDS(float voltage, float temperature, const std::string &calibrationType)
+        +void saveCalibrationData()
+    }
+
+    class Sensor {
+        +Sensor()
+        +float getAnalogInputVoltage(std::string pin)
     }
 
     class OneWire {
@@ -343,28 +358,24 @@ classDiagram
     class DallasTemperature {
         +DallasTemperature(OneWire* oneWire)
         +void begin()
-        +void requestTemperatures()
         +float getTempCByIndex(int index)
     }
 
-    ProbeSampler --> OneWire : uses
-    ProbeSampler --> DallasTemperature : uses
-
-    class GlobalFunctions {
-        +std::string twoDecimalString(float value)
-        +float getTemperatureInCelsius(DallasTemperature t)
-        +float getAnalogInputVoltage(int inputPin)
-        +float getTDS(float inputPin, float temperature)
-        +float getConductivity(float inputPin, float temperature)
-        +float getPressure(float inputPin)
+    class CCalibrationConfigHelper {
+        +CCalibrationConfigHelper(const CalibrationConfig &config, std::map<std::string, std::string> &parameters)
+        +std::string getAsString(std::string key)
     }
 
-    ProbeSampler : +const char* TAG = "ProbeSampler"
-    ProbeSampler : +float tempC
-    ProbeSampler : +float pressure
-    ProbeSampler : +float tds
-    ProbeSampler : +float conductivity
-    ProbeSampler : +float ADC_COMPENSATION = 1
-    ProbeSampler : +OneWire oneWire(TEMP_SENSOR_INPUT_PIN)
-    ProbeSampler : +DallasTemperature tempSensor(&oneWire)
-    ```
+    class SampleData {
+        +float temperature
+        +float tds
+        +float ph
+        +float do_voltage
+    }
+
+    ProbeSampler --> Sensor : uses
+    ProbeSampler --> OneWire : uses
+    ProbeSampler --> DallasTemperature : uses
+    ProbeSampler --> CCalibrationConfigHelper : uses
+    ProbeSampler --> SampleData : produces
+```
