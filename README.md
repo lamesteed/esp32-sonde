@@ -325,6 +325,34 @@ CN -->> A: "END_OF_DATA"
 ```
 
 ### Probe Sampling
+
+The ProbeSampler class acts as a central hub for managing sensor data collection, calibration, and stability checks. 
+
+Initialization:
+
+The ProbeSampler starts by initializing sensors, loading calibration data, and checking the stability of the DO sensor voltage.
+
+Sensor Reading:
+
+The ProbeSampler reads data from various sensors:
+Temperature sensor (DS18B20).
+Pressure sensor.
+TDS sensor with temperature compensation.
+PH sensor.
+DO sensor, ensuring voltage stabilization.
+
+Calibration:
+
+The ProbeSampler supports calibration for sensors:
+TDS sensor calibration using buffer solutions.
+DO sensor calibration by stabilizing voltage around 42mV.
+Calibration data is saved to SD Card for persistence.
+
+DO Sensor Stability:
+
+The DO sensor voltage is checked for stability within a defined range (e.g., ±1mV around 42mV).
+If stable, the sensor is initialized; otherwise, the process retries or times out.
+
 ```mermaid
 classDiagram
 direction TB
